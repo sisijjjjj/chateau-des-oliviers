@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olive Grove Essences - À Propos</title>
+    <link rel="stylesheet" href="about.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <img src="https://tse3.mm.bing.net/th/id/OIP.saQdJk7UUWGCqWIRk9NOAAHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" 
+             alt="Olive Grove Essences" class="loading-logo">
+        <div class="loading-text">Chargement...</div>
+        <div class="loading-bar">
+            <div class="loading-progress" id="loadingProgress"></div>
+        </div>
+    </div>
+
+    <!-- Scroll Progress -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Retour en haut">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden" id="mainContainer">
+        <!-- Header -->
+        <header class="site-header">
+            <div class="header-container">
+                <div class="logo">
+                    <img src="https://tse3.mm.bing.net/th/id/OIP.saQdJk7UUWGCqWIRk9NOAAHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" 
+                         alt="Olive Grove Essences" class="logo-img">
+                </div>
+
+                <nav class="main-nav">
+                    <ul>
+                        <li><a (click)="navigateTo('/')" class="nav-link" id="homeLink">Accueil</a></li>
+                        <li class="nav-dropdown">
+                            <a href="javascript:void(0)" class="nav-link dropdown-toggle" id="productsLink">
+                                Produits <i class="fas fa-chevron-down"></i>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a (click)="navigateTo('/huile-olive')" class="dropdown-item" id="oilLink">
+                                    <i class="fas fa-wine-bottle"></i>
+                                    Huiles d'Olive
+                                </a>
+                                <a (click)="navigateTo('/savon')" class="dropdown-item" id="soapLink">
+                                    <i class="fas fa-soap"></i>
+                                    Savons Naturels
+                                </a>
+                                <a (click)="navigateTo('/huiles-essentielles')" class="dropdown-item" id="essentialsLink">
+                                    <i class="fas fa-flask"></i>
+                                    Huiles Essentielles
+                                </a>
+                            </div>
+                        </li>
+                        <li><a (click)="navigateTo('/about')" class="nav-link active" id="aboutLink">À Propos</a></li>
+                        <li><a href="#contact" class="nav-link" id="contactLink">Contact</a></li>
+                    </ul>
+                </nav>
+
+                <div class="header-actions">
+                    <button class="theme-toggle" id="themeToggle" aria-label="Basculer le mode sombre">
+                        <i class="fas fa-moon"></i>
+                    </button>
+
+                    <div class="language-selector">
+                        <select class="lang-select" id="languageSelect">
+                            <option value="fr">FR</option>
+                            <option value="en">EN</option>
+                            <option value="ar">AR</option>
+                        </select>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="action-btn" id="userBtn">
+                            <i class="fas fa-user"></i>
+                        </button>
+                        <button class="action-btn cart-icon" id="cartBtn">
+                            <i class="fas fa-shopping-bag"></i>
+                            <span class="cart-count" id="cartCount">0</span>
+                        </button>
+                    </div>
+
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Menu Mobile -->
+            <div class="mobile-nav" id="mobileNav">
+                <div class="mobile-nav-header">
+                    <span class="mobile-nav-title" id="mobileNavTitle">Menu</span>
+                    <button class="mobile-close-btn" id="mobileCloseBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <nav class="mobile-nav-content">
+                    <a (click)="navigateTo('/')" class="mobile-nav-link" id="mobileHomeLink">Accueil</a>
+                    
+                    <div class="mobile-submenu">
+                        <a href="javascript:void(0)" class="mobile-nav-link submenu-toggle" id="mobileProductsLink">
+                            Produits <i class="fas fa-chevron-down"></i>
+                        </a>
+                        <div class="mobile-submenu-items" id="mobileSubmenu">
+                            <a (click)="navigateTo('/huile-olive')" class="mobile-submenu-link" id="mobileOilLink">
+                                <i class="fas fa-wine-bottle"></i>
+                                Huiles d'Olive
+                            </a>
+                            <a (click)="navigateTo('/savon')" class="mobile-submenu-link" id="mobileSoapLink">
+                                <i class="fas fa-soap"></i>
+                                Savons Naturels
+                            </a>
+                            <a (click)="navigateTo('/huiles-essentielles')" class="mobile-submenu-link" id="mobileEssentialsLink">
+                                <i class="fas fa-flask"></i>
+                                Huiles Essentielles
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <a (click)="navigateTo('/about')" class="mobile-nav-link active" id="mobileAboutLink">À Propos</a>
+                    <a href="#contact" class="mobile-nav-link" id="mobileContactLink">Contact</a>
+                    
+                    <div class="mobile-language-selector">
+                        <button class="lang-btn active" data-lang="fr">FR</button>
+                        <button class="lang-btn" data-lang="en">EN</button>
+                        <button class="lang-btn" data-lang="ar">AR</button>
+                    </div>
+                </nav>
+            </div>
+
+            <div class="nav-overlay" id="navOverlay"></div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="about-hero">
+            <div class="hero-overlay"></div>
+            <div class="container">
+                <div class="hero-content">
+                    <h1 class="hero-title" id="heroTitle">Notre Histoire</h1>
+                    <p class="hero-subtitle" id="heroSubtitle">De la terre à votre maison, l'authenticité tunisienne</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Introduction -->
+        <section class="intro-section">
+            <div class="container">
+                <div class="intro-content">
+                    <div class="intro-text">
+                        <h2 class="section-title" id="introTitle">Qui Sommes-Nous ?</h2>
+                        <p class="intro-description" id="introDescription">
+                            Nous sommes une marque tunisienne spécialisée dans les produits naturels : huile d'olive, savon, et huiles essentielles. Notre histoire a commencé par un grand amour pour la nature tunisienne et notre désir d'offrir des produits purs, authentiques et éloignés des produits chimiques.
+                        </p>
+                        <div class="signature">
+                            <div class="signature-line"></div>
+                            <p class="signature-text" id="signatureText">La qualité authentique commence de la terre</p>
+                        </div>
+                    </div>
+                    <div class="intro-image">
+                        <img src="https://i.pinimg.com/1200x/86/81/9e/86819e647637c0bc0f4920a3fdbfbc90.jpg" 
+                             alt="Nature Tunisienne" 
+                             class="intro-img">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Notre Histoire -->
+        <section class="story-section">
+            <div class="container">
+                <div class="story-content">
+                    <div class="story-image">
+                        <img src="https://i.pinimg.com/1200x/37/8c/c0/378cc05b94c610213f11dbb3fb7b8692.jpg" 
+                             alt="Notre Histoire" 
+                             class="story-img">
+                    </div>
+                    <div class="story-text">
+                        <h2 class="section-title" id="storyTitle">Notre Parcours</h2>
+                        <p class="story-description" id="storyDescription">
+                            Nous avons grandi au milieu des oliviers, des herbes aromatiques et des recettes ancestrales. Petit à petit, notre rêve est devenu un projet : créer des produits tunisiens authentiques de niveau mondial, permettant à chacun de vivre une expérience naturelle et luxueuse.
+                        </p>
+                        <div class="milestones">
+                            <div class="milestone">
+                                <span class="milestone-number">+5000</span>
+                                <span class="milestone-text" id="milestone1">Clients Satisfaits</span>
+                            </div>
+                            <div class="milestone">
+                                <span class="milestone-number">+15</span>
+                                <span class="milestone-text" id="milestone2">Produits Naturels</span>
+                            </div>
+                            <div class="milestone">
+                                <span class="milestone-number">100%</span>
+                                <span class="milestone-text" id="milestone3">Fabriqué en Tunisie</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Ce Qui Nous Différencie -->
+        <section class="different-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title" id="differentTitle">Ce Qui Nous Rend Uniques</h2>
+                    <p class="section-subtitle" id="differentSubtitle">
+                        Plus qu'un simple commerce, un projet né de la passion et de l'authenticité
+                    </p>
+                </div>
+
+                <div class="different-grid">
+                    <div class="different-card">
+                        <div class="card-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h3 id="card1Title">Matériaux Premium</h3>
+                        <p id="card1Text">
+                            Nous sélectionnons chaque ingrédient avec soin pour garantir une qualité exceptionnelle
+                        </p>
+                    </div>
+
+                    <div class="different-card">
+                        <div class="card-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <h3 id="card2Title">Savoir-Faire Ancestral</h3>
+                        <p id="card2Text">
+                            Recettes traditionnelles combinées avec des techniques modernes pour une efficacité optimale
+                        </p>
+                    </div>
+
+                    <div class="different-card">
+                        <div class="card-icon">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <h3 id="card3Title">Attention aux Détails</h3>
+                        <p id="card3Text">
+                            Chaque étape est calculée, de l'ingrédient au toucher, à l'odeur et à l'emballage
+                        </p>
+                    </div>
+
+                    <div class="different-card">
+                        <div class="card-icon">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <h3 id="card4Title">Âme Tunisienne</h3>
+                        <p id="card4Text">
+                            Chaque produit raconte l'esprit de la Tunisie : la terre, la saveur et l'authenticité
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Notre Engagement -->
+        <section class="commitment-section">
+            <div class="container">
+                <div class="commitment-content">
+                    <div class="commitment-text">
+                        <h2 class="section-title" id="commitmentTitle">Notre Engagement</h2>
+                        
+                        <div class="commitment-item">
+                            <div class="commitment-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="commitment-details">
+                                <h3 id="commitment1Title">Qualité Constante</h3>
+                                <p id="commitment1Text">
+                                    Nous ne vendons que des produits en lesquels nous croyons et que nous utiliserions dans notre propre maison
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="commitment-item">
+                            <div class="commitment-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="commitment-details">
+                                <h3 id="commitment2Title">Service Client Exceptionnel</h3>
+                                <p id="commitment2Text">
+                                    Pour nous, le client est un partenaire. Nous écoutons chaque feedback et améliorons continuellement
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="commitment-item">
+                            <div class="commitment-icon">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="commitment-details">
+                                <h3 id="commitment3Title">Livraison Sûre et Rapide</h3>
+                                <p id="commitment3Text">
+                                    Vos commandes sont traitées avec soin et livrées dans les meilleurs délais
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="commitment-visual">
+                        <div class="visual-card">
+                            <i class="fas fa-award"></i>
+                            <h4 id="visual1Title">Produits 100% Naturels</h4>
+                        </div>
+                        <div class="visual-card">
+                            <i class="fas fa-recycle"></i>
+                            <h4 id="visual2Title">Emballages Écologiques</h4>
+                        </div>
+                        <div class="visual-card">
+                            <i class="fas fa-handshake"></i>
+                            <h4 id="visual3Title">Support Local</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Vision & Mission -->
+        <section class="vision-section">
+            <div class="container">
+                <div class="vision-grid">
+                    <div class="vision-card">
+                        <div class="vision-header">
+                            <i class="fas fa-eye"></i>
+                            <h3 id="visionTitle">Notre Vision</h3>
+                        </div>
+                        <p id="visionText">
+                            Créer une marque tunisienne forte, respectée et compétitive au niveau mondial. Nous voulons que notre image soit liée à la qualité, l'authenticité et aux produits naturels que vous pouvez sentir et dont vous pouvez profiter.
+                        </p>
+                    </div>
+
+                    <div class="vision-card">
+                        <div class="vision-header">
+                            <i class="fas fa-bullseye"></i>
+                            <h3 id="missionTitle">Notre Mission</h3>
+                        </div>
+                        <p id="missionText">
+                            Offrir à chaque foyer tunisien l'opportunité d'utiliser des produits naturels authentiques, et redonner sa valeur à l'artisanat tunisien dans le monde, avec fierté et dignité.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="about-cta">
+            <div class="container">
+                <div class="cta-content">
+                    <h2 id="ctaTitle">Découvrez Notre Collection</h2>
+                    <p id="ctaSubtitle">
+                        Laissez les produits naturels transformer votre routine quotidienne en une expérience exceptionnelle
+                    </p>
+                    <button class="cta-button" id="ctaButton">
+                        <i class="fas fa-shopping-bag"></i>
+                        Voir Nos Produits
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer id="contact" class="site-footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-section">
+                        <img src="https://tse3.mm.bing.net/th/id/OIP.saQdJk7UUWGCqWIRk9NOAAHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" 
+                             alt="Logo" class="footer-logo">
+                        <h3>Olive Grove Essences</h3>
+                        <p>
+                            <i class="fas fa-seedling"></i>
+                            Créateur d'essences naturelles depuis 1985
+                        </p>
+                        <div class="social-links">
+                            <a href="#" class="social-link" title="Facebook">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" class="social-link" title="Instagram">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                            <a href="#" class="social-link" title="Twitter">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>Produits</h4>
+                        <ul>
+                            <li><a (click)="navigateTo('/huile-olive')" id="footerOilLink">Huiles d'Olive</a></li>
+                            <li><a (click)="navigateTo('/savon')" id="footerSoapLink">Savons Naturels</a></li>
+                            <li><a (click)="navigateTo('/huiles-essentielles')" id="footerEssentialsLink">Huiles Essentielles</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>Contact</h4>
+                        <p><i class="fas fa-map-marker-alt"></i> <span id="footerAddress">123 Rue de l'Olivier, Tunis 1000</span></p>
+                        <p><i class="fas fa-phone"></i> <span id="footerPhone">+216 12 345 678</span></p>
+                        <p><i class="fas fa-envelope"></i> <span id="footerEmail">contact@olivegrove.tn</span></p>
+                    </div>
+                </div>
+                
+                <div class="footer-bottom">
+                    <p>
+                        <i class="far fa-copyright"></i>
+                        2024 Olive Grove Essences. <span id="footerRights">Tous droits réservés</span>
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="about.js"></script>
+</body>
+</html>

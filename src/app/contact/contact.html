@@ -1,0 +1,419 @@
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <!-- Logo -->
+      <div class="logo">
+        <img src="https://tse3.mm.bing.net/th/id/OIP.saQdJk7UUWGCqWIRk9NOAAHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" 
+             alt="Olive Grove Essences" 
+             class="logo-img">
+        <span class="logo-text">Olive Grove Essences</span>
+      </div>
+
+      <!-- Navigation Desktop -->
+      <nav class="main-nav">
+        <ul>
+          <li><a (click)="navigateTo('/')" class="nav-link active">{{ translate('home') }}</a></li>
+          <li class="nav-dropdown">
+            <a href="javascript:void(0)" class="nav-link dropdown-toggle">
+              {{ translate('products') }} <i class="fas fa-chevron-down"></i>
+            </a>
+            <div class="dropdown-menu">
+              <a (click)="navigateTo('/huile-olive')" class="dropdown-item">
+                <i class="fas fa-wine-bottle"></i>
+                {{ currentLanguage === 'fr' ? 'Huiles d\'Olive' : 
+                   currentLanguage === 'en' ? 'Olive Oils' : 
+                   'زيوت الزيتون' }}
+              </a>
+              <a (click)="navigateTo('/savon')" class="dropdown-item">
+                <i class="fas fa-soap"></i>
+                {{ currentLanguage === 'fr' ? 'Savons Naturels' : 
+                   currentLanguage === 'en' ? 'Natural Soaps' : 
+                   'صابون طبيعي' }}
+              </a>
+              <a (click)="navigateTo('/huiles-essentielles')" class="dropdown-item">
+                <i class="fas fa-flask"></i>
+                {{ currentLanguage === 'fr' ? 'Huiles Essentielles' : 
+                   currentLanguage === 'en' ? 'Essential Oils' : 
+                   'الزيوت الأساسية' }}
+              </a>
+              <a (click)="navigateTo('/soin')" class="dropdown-item">
+                <i class="fas fa-spa"></i>
+                {{ currentLanguage === 'fr' ? 'Soins Naturels' : 
+                   currentLanguage === 'en' ? 'Natural Care' : 
+                   'العناية الطبيعية' }}
+              </a>
+            </div>
+          </li>
+          <li><a (click)="navigateTo('/about')" class="nav-link">{{ translate('about') }}</a></li>
+          <li><a (click)="navigateTo('/notre-histoire')" class="nav-link">
+            {{ currentLanguage === 'fr' ? 'Notre histoire' : 
+               currentLanguage === 'en' ? 'Our Story' : 
+               'قصتنا' }}
+          </a></li>
+          <li><a href="#contact" class="nav-link">{{ translate('contact') }}</a></li>
+        </ul>
+      </nav>
+
+      <!-- Actions Header -->
+      <div class="header-actions">
+        <!-- Sélecteur de langue -->
+        <div class="language-selector">
+          <select class="lang-select" (change)="onLanguageChange($event)" [value]="currentLanguage">
+            <option value="fr">FR</option>
+            <option value="en">EN</option>
+            <option value="ar">AR</option>
+          </select>
+        </div>
+
+        <div class="search-container">
+          <input type="text" class="search-input" [placeholder]="translate('search')">
+          <button class="search-btn">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+        
+        <div class="action-buttons">
+          <button class="action-btn">
+            <i class="fas fa-user"></i>
+          </button>
+          <button class="action-btn cart-icon" (click)="toggleCart()">
+            <i class="fas fa-shopping-bag"></i>
+            <span class="cart-count" *ngIf="cartItemCount > 0">{{ cartItemCount }}</span>
+          </button>
+        </div>
+
+        <!-- Menu Mobile -->
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Menu Mobile -->
+    <div class="mobile-nav" [class.active]="mobileMenuOpen">
+      <div class="mobile-nav-header">
+        <span class="mobile-nav-title">
+          {{ currentLanguage === 'fr' ? 'Menu' : 
+             currentLanguage === 'en' ? 'Menu' : 
+             'القائمة' }}
+        </span>
+        <button class="mobile-close-btn" (click)="closeMobileMenu()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <nav class="mobile-nav-content">
+        <a (click)="navigateTo('/')" class="mobile-nav-link">{{ translate('home') }}</a>
+        
+        <!-- Produits avec sous-menu mobile -->
+        <div class="mobile-submenu">
+          <a href="javascript:void(0)" class="mobile-nav-link submenu-toggle" (click)="toggleMobileSubmenu()">
+            {{ translate('products') }} <i class="fas fa-chevron-down"></i>
+          </a>
+          <div class="mobile-submenu-items" [class.active]="mobileSubmenuOpen">
+            <a (click)="navigateTo('/huile-olive')" class="mobile-submenu-link">
+              <i class="fas fa-wine-bottle"></i>
+              {{ currentLanguage === 'fr' ? 'Huiles d\'Olive' : 
+                 currentLanguage === 'en' ? 'Olive Oils' : 
+                 'زيوت الزيتون' }}
+            </a>
+            <a (click)="navigateTo('/savon')" class="mobile-submenu-link">
+              <i class="fas fa-soap"></i>
+              {{ currentLanguage === 'fr' ? 'Savons Naturels' : 
+                 currentLanguage === 'en' ? 'Natural Soaps' : 
+                 'صابون طبيعي' }}
+            </a>
+            <a (click)="navigateTo('/huiles-essentielles')" class="mobile-submenu-link">
+              <i class="fas fa-flask"></i>
+              {{ currentLanguage === 'fr' ? 'Huiles Essentielles' : 
+                 currentLanguage === 'en' ? 'Essential Oils' : 
+                 'الزيوت الأساسية' }}
+            </a>
+            <a (click)="navigateTo('/soins')" class="mobile-submenu-link">
+              <i class="fas fa-spa"></i>
+              {{ currentLanguage === 'fr' ? 'Soins Naturels' : 
+                 currentLanguage === 'en' ? 'Natural Care' : 
+                 'العناية الطبيعية' }}
+            </a>
+          </div>
+        </div>
+        
+        <a (click)="navigateTo('/about')" class="mobile-nav-link">{{ translate('about') }}</a>
+        <a (click)="navigateTo('/notre-histoire')" class="mobile-nav-link">
+          {{ currentLanguage === 'fr' ? 'Notre histoire' : 
+             currentLanguage === 'en' ? 'Our Story' : 
+             'قصتنا' }}
+        </a>
+        <a href="#contact" class="mobile-nav-link" (click)="scrollToSection('contact')">{{ translate('contact') }}</a>
+        
+        <!-- Sélecteur de langue mobile -->
+        <div class="mobile-language-selector">
+          <button class="lang-btn" [class.active]="currentLanguage === 'fr'" (click)="changeLanguage('fr')">FR</button>
+          <button class="lang-btn" [class.active]="currentLanguage === 'en'" (click)="changeLanguage('en')">EN</button>
+          <button class="lang-btn" [class.active]="currentLanguage === 'ar'" (click)="changeLanguage('ar')">AR</button>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Overlay Mobile -->
+    <div class="nav-overlay" [class.active]="mobileMenuOpen" (click)="closeMobileMenu()"></div>
+  </header>
+
+
+  <!-- Background Image pour toute la page -->
+  <div class="page-background"></div>
+
+  <!-- Overlay pour lisibilité -->
+  <div class="content-overlay"></div>
+
+  <!-- Hero Section -->
+  <section class="contact-hero">
+    <div class="contact-hero-content">
+      <h1>Contactez-nous</h1>
+      <p>Nous sommes là pour répondre à toutes vos questions sur nos produits d'huile d'olive, savons naturels et huiles essentielles. N'hésitez pas à nous contacter, nous vous répondrons dans les plus brefs délais.</p>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section class="contact-section">
+    <div class="container">
+      <!-- Contact Form au centre -->
+      <div class="contact-form-container">
+        <h2>Envoyez-nous un message</h2>
+        
+        <!-- Message d'erreur général -->
+        <div *ngIf="submitError" class="error-container active">
+          <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i> {{ submitError }}
+          </div>
+        </div>
+
+        <!-- Message de succès -->
+        <div *ngIf="submitSuccess" class="success-message active">
+          <i class="fas fa-check-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+          <h3>Message envoyé avec succès!</h3>
+          <p>Nous vous répondrons dans les plus brefs délais.</p>
+        </div>
+
+        <form class="contact-form" (ngSubmit)="onSubmit()" #contactForm="ngForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="firstName">
+                <i class="fas fa-user"></i>
+                Prénom *
+              </label>
+              <input 
+                type="text" 
+                id="firstName" 
+                name="firstName"
+                [(ngModel)]="contactFormData.firstName"
+                (input)="clearFieldError('firstName')"
+                [class.error]="hasError('firstName')"
+                required>
+              <div *ngIf="hasError('firstName')" class="field-error">
+                <i class="fas fa-exclamation-circle"></i> {{ getErrorMessage('firstName') }}
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="lastName">
+                <i class="fas fa-user"></i>
+                Nom *
+              </label>
+              <input 
+                type="text" 
+                id="lastName" 
+                name="lastName"
+                [(ngModel)]="contactFormData.lastName"
+                (input)="clearFieldError('lastName')"
+                [class.error]="hasError('lastName')"
+                required>
+              <div *ngIf="hasError('lastName')" class="field-error">
+                <i class="fas fa-exclamation-circle"></i> {{ getErrorMessage('lastName') }}
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="email">
+              <i class="fas fa-envelope"></i>
+              Email *
+            </label>
+            <input 
+              type="email" 
+              id="email" 
+              name="email"
+              [(ngModel)]="contactFormData.email"
+              (input)="clearFieldError('email')"
+              [class.error]="hasError('email')"
+              required>
+            <div *ngIf="hasError('email')" class="field-error">
+              <i class="fas fa-exclamation-circle"></i> {{ getErrorMessage('email') }}
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="phone">
+              <i class="fas fa-phone"></i>
+              Téléphone
+            </label>
+            <input 
+              type="tel" 
+              id="phone" 
+              name="phone"
+              [(ngModel)]="contactFormData.phone"
+              (input)="clearFieldError('phone')"
+              [class.error]="hasError('phone')">
+            <div *ngIf="hasError('phone')" class="field-error">
+              <i class="fas fa-exclamation-circle"></i> {{ getErrorMessage('phone') }}
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="subject">
+              <i class="fas fa-tag"></i>
+              Sujet *
+            </label>
+            <select 
+              id="subject" 
+              name="subject"
+              [(ngModel)]="contactFormData.subject"
+              (change)="clearFieldError('subject')"
+              [class.error]="hasError('subject')"
+              required>
+              <option value="">Sélectionnez un sujet</option>
+              <option value="general">Question générale</option>
+              <option value="product">Information produit</option>
+              <option value="order">Commande</option>
+              <option value="partnership">Partenariat</option>
+              <option value="other">Autre</option>
+            </select>
+            <div *ngIf="hasError('subject')" class="field-error">
+              <i class="fas fa-exclamation-circle"></i> {{ getErrorMessage('subject') }}
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="message">
+              <i class="fas fa-comment"></i>
+              Message *
+            </label>
+            <textarea 
+              id="message" 
+              name="message"
+              [(ngModel)]="contactFormData.message"
+              (input)="clearFieldError('message')"
+              [class.error]="hasError('message')"
+              placeholder="Décrivez votre demande en détail..."
+              required></textarea>
+            <div *ngIf="hasError('message')" class="field-error">
+              <i class="fas fa-exclamation-circle"></i> {{ getErrorMessage('message') }}
+            </div>
+          </div>
+          
+          <button 
+            type="submit" 
+            class="submit-btn" 
+            [disabled]="isSubmitting">
+            <i class="fas" [ngClass]="isSubmitting ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+            {{ isSubmitting ? 'Envoi en cours...' : 'Envoyer le message' }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Map Section -->
+  <section class="map-section">
+    <div class="container">
+      <div class="map-container">
+        <div class="map-wrapper">
+          <!-- Iframe Google Maps avec Teboursouk, Béja -->
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13060.722829814868!2d9.245359907387514!3d35.03547299541448!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12fdd8e73ee3468f%3A0x3c0f58b51c4fda5b!2sTeboursouk%2C%20Tunisie!5e0!3m2!1sfr!2sfr!4v1701975500000!5m2!1sfr!2sfr" 
+            width="100%" 
+            height="400" 
+            style="border:0;" 
+            allowfullscreen="" 
+            loading="lazy" 
+            referrerpolicy="no-referrer-when-downgrade">
+          </iframe>
+          
+          <!-- Overlay avec informations -->
+          <div class="map-overlay">
+            <div class="overlay-content">
+              <i class="fas fa-map-marked-alt"></i>
+              <h3>Notre oliveraie à Teboursouk</h3>
+              <p>Teboursouk, Béja, Tunisie</p>
+              <p class="overlay-note">Cœur de notre production d'huile d'olive</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+ <!-- Footer -->
+<!-- Footer avec fond dégradé et style de l'image -->
+<footer class="footer-image-style">
+    <div class="footer-container">
+        <!-- Section 1: Présentation -->
+        <div class="footer-brand-section">
+            <h1 class="footer-main-title">BIPUNICA</h1>
+            
+            <p class="footer-description">
+                Depuis 3 générations, nous produisons des huiles d'olive d'exception avec passion et respect pour la nature, en sélectionnant les meilleures olives de Tunisie.
+            </p>
+            <hr>
+        </div>
+
+        <!-- Section 2: Nos Collections -->
+        <div class="footer-section">
+            <h3 class="footer-section-title">NOS COLLECTIONS</h3>
+            <ul class="footer-list">
+                <li><strong>Huile Extra Vierge</strong></li>
+                <li><strong>Huile Vierge</strong></li>
+                <li><strong>Huile Pure/Raffinée</strong></li>
+                <li><strong>Huiles Aromatisées</strong></li>
+                <li><strong>Savons Naturels</strong></li>
+            </ul>
+        </div>
+
+        <!-- Section 3: Informations -->
+        <div class="footer-section">
+            <h3 class="footer-section-title">INFORMATIONS</h3>
+            <ul class="footer-list">
+                <li><strong>Notre Histoire</strong></li>
+                <li><strong>Engagements</strong></li>
+                <li><strong>Livraison & Retours</strong></li>
+                <li><strong>Contact</strong></li>
+                <li><strong>FAQ</strong></li>
+            </ul>
+        </div>
+
+        <!-- Section 4: Contact & Support -->
+        <div class="footer-section contact-section">
+            <h3 class="footer-section-title">CONTACT & SUPPORT</h3>
+            <ul class="footer-contact-list">
+                <li>+216 12 34 56 70</li>
+                <li>contact@bipunica.tn</li>
+                <li>Sfax, Tunisie</li>
+                <li>Lun-Ven: 9h-18h</li>
+            </ul>
+            
+            <!-- Icônes de paiement -->
+            <div class="payment-icons">
+                <div class="payment-icon">
+                    <i class="fab fa-cc-visa"></i>
+                </div>
+                <div class="payment-icon">
+                    <i class="fab fa-cc-mastercard"></i>
+                </div>
+                <div class="payment-icon">
+                    <i class="fab fa-cc-paypal"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+</div>

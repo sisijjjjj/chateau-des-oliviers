@@ -1,0 +1,793 @@
+<div class="about-page">
+    <!-- Header amélioré -->
+    <header class="site-header">
+        <div class="header-container">
+            <!-- Logo -->
+            <div class="logo">
+                <img src="https://tse3.mm.bing.net/th/id/OIP.saQdJk7UUWGCqWIRk9NOAAHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" 
+                     alt="Olive Grove Essences" 
+                     class="logo-img">
+                <span class="logo-text">Olive Grove</span>
+            </div>
+
+            <!-- Navigation Desktop -->
+            <nav class="main-nav">
+                <ul>
+                    <li><a (click)="navigateTo('/')" class="nav-link active">{{ translate('home') }}</a></li>
+                    
+                    <!-- Dropdown pour Produits -->
+                    <li class="nav-dropdown">
+                        <a href="javascript:void(0)" class="nav-link dropdown-toggle">
+                            {{ translate('products') }} <i class="fas fa-chevron-down"></i>
+                        </a>
+                        <div class="dropdown-menu">
+                            <a (click)="navigateTo('/huile-olive')" class="dropdown-item">
+                                <i class="fas fa-wine-bottle"></i>
+                                {{ currentLanguage === 'fr' ? 'Huiles d\'Olive' : 
+                                   currentLanguage === 'en' ? 'Olive Oils' : 
+                                   'زيوت الزيتون' }}
+                            </a>
+                            <a (click)="navigateTo('/savon')" class="dropdown-item">
+                                <i class="fas fa-soap"></i>
+                                {{ currentLanguage === 'fr' ? 'Savons Naturels' : 
+                                   currentLanguage === 'en' ? 'Natural Soaps' : 
+                                   'صابون طبيعي' }}
+                            </a>
+                            <a (click)="navigateTo('/huiles-essentielles')" class="dropdown-item">
+                                <i class="fas fa-flask"></i>
+                                {{ currentLanguage === 'fr' ? 'Huiles Essentielles' : 
+                                   currentLanguage === 'en' ? 'Essential Oils' : 
+                                   'الزيوت الأساسية' }}
+                            </a>
+                            <a (click)="navigateTo('/soin')" class="dropdown-item">
+                                <i class="fas fa-spa"></i>
+                                {{ currentLanguage === 'fr' ? 'Soins Naturels' : 
+                                   currentLanguage === 'en' ? 'Natural Care' : 
+                                   'العناية الطبيعية' }}
+                            </a>
+                        </div>
+                    </li>
+                    
+                    <li><a (click)="navigateTo('/about')" class="nav-link">{{ translate('about') }}</a></li>
+                    <li><a (click)="navigateTo('/notre-histoire')" class="nav-link">
+                        {{ currentLanguage === 'fr' ? 'Notre histoire' : 
+                           currentLanguage === 'en' ? 'Our Story' : 
+                           'قصتنا' }}
+                    </a></li>
+                    <li><a href="#contact" class="nav-link">{{ translate('contact') }}</a></li>
+                </ul>
+            </nav>
+
+            <!-- Actions Header -->
+            <div class="header-actions">
+                <!-- Sélecteur de langue -->
+                <div class="language-selector">
+                    <select class="lang-select" (change)="onLanguageChange($event)" [value]="currentLanguage">
+                        <option value="fr">FR</option>
+                        <option value="en">EN</option>
+                        <option value="ar">AR</option>
+                    </select>
+                </div>
+
+                <!-- Barre de recherche -->
+                <div class="search-container">
+                    <input type="text" class="search-input" [placeholder]="translate('search')">
+                    <button class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                
+                <!-- Boutons d'action -->
+                <div class="action-buttons">
+                    <button class="action-btn">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <button class="action-btn cart-icon" (click)="toggleCart()">
+                        <span class="cart-count" *ngIf="cartItemCount > 0">{{ cartItemCount }}</span>
+                    </button>
+                </div>
+
+                <!-- Menu Mobile -->
+                <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bande verte d'olive après la navigation -->
+        <div class="header-banner">
+            <div class="header-banner-content">
+                <i class="fas fa-leaf"></i>
+                <span *ngIf="currentLanguage === 'fr'">🚚 Livraison GRATUITE à partir de 100 DT | 🌿 Produits 100% naturels et bio | ⭐ Garantie satisfaction</span>
+                <span *ngIf="currentLanguage === 'en'">🚚 FREE delivery from 100 DT | 🌿 100% natural and organic products | ⭐ Satisfaction guarantee</span>
+                <span *ngIf="currentLanguage === 'ar'">🚚 توصيل مجاني بدءًا من 100 دينار | 🌿 منتجات 100% طبيعية وعضوية | ⭐ ضمان الرضا</span>
+                <i class="fas fa-leaf"></i>
+            </div>
+        </div>
+
+        <!-- Menu Mobile -->
+        <div class="mobile-nav" [class.active]="mobileMenuOpen">
+            <div class="mobile-nav-header">
+                <span class="mobile-nav-title">
+                    {{ currentLanguage === 'fr' ? 'Menu' : 
+                       currentLanguage === 'en' ? 'Menu' : 
+                       'القائمة' }}
+                </span>
+                <button class="mobile-close-btn" (click)="closeMobileMenu()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <nav class="mobile-nav-content">
+                <a (click)="navigateTo('/')" class="mobile-nav-link">{{ translate('home') }}</a>
+                
+                <!-- Produits avec sous-menu mobile -->
+                <div class="mobile-submenu">
+                    <div class="mobile-nav-link mobile-submenu-toggle" 
+                         [class.active]="mobileSubmenuOpen" 
+                         (click)="toggleMobileSubmenu()">
+                        <span>{{ translate('products') }}</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="mobile-submenu-items" [class.active]="mobileSubmenuOpen">
+                        <a (click)="navigateTo('/huile-olive')" class="mobile-submenu-link">
+                            <i class="fas fa-wine-bottle"></i>
+                            {{ currentLanguage === 'fr' ? 'Huiles d\'Olive' : 
+                               currentLanguage === 'en' ? 'Olive Oils' : 
+                               'زيوت الزيتون' }}
+                        </a>
+                        <a (click)="navigateTo('/savon')" class="mobile-submenu-link">
+                            <i class="fas fa-soap"></i>
+                            {{ currentLanguage === 'fr' ? 'Savons Naturels' : 
+                               currentLanguage === 'en' ? 'Natural Soaps' : 
+                               'صابون طبيعي' }}
+                        </a>
+                        <a (click)="navigateTo('/huiles-essentielles')" class="mobile-submenu-link">
+                            <i class="fas fa-flask"></i>
+                            {{ currentLanguage === 'fr' ? 'Huiles Essentielles' : 
+                               currentLanguage === 'en' ? 'Essential Oils' : 
+                               'الزيوت الأساسية' }}
+                        </a>
+                        <a (click)="navigateTo('/soins')" class="mobile-submenu-link">
+                            <i class="fas fa-spa"></i>
+                            {{ currentLanguage === 'fr' ? 'Soins Naturels' : 
+                               currentLanguage === 'en' ? 'Natural Care' : 
+                               'العناية الطبيعية' }}
+                        </a>
+                    </div>
+                </div>
+                
+                <a (click)="navigateTo('/about')" class="mobile-nav-link">{{ translate('about') }}</a>
+                <a (click)="navigateTo('/notre-histoire')" class="mobile-nav-link">
+                    {{ currentLanguage === 'fr' ? 'Notre histoire' : 
+                       currentLanguage === 'en' ? 'Our Story' : 
+                       'قصتنا' }}
+                </a>
+                <a href="#contact" class="mobile-nav-link" (click)="scrollToSection('contact')">{{ translate('contact') }}</a>
+                
+                <!-- Sélecteur de langue mobile -->
+                <div class="mobile-language-selector">
+                    <button class="lang-btn" [class.active]="currentLanguage === 'fr'" (click)="changeLanguage('fr')">FR</button>
+                    <button class="lang-btn" [class.active]="currentLanguage === 'en'" (click)="changeLanguage('en')">EN</button>
+                    <button class="lang-btn" [class.active]="currentLanguage === 'ar'" (click)="changeLanguage('ar')">AR</button>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Overlay Mobile -->
+        <div class="nav-overlay" [class.active]="mobileMenuOpen" (click)="closeMobileMenu()"></div>
+    </header>
+
+    <!-- Contenu principal reste inchangé -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <div class="hero-badge">Artisan Français</div>
+                        <h1 class="hero-title">{{ heroTitle }}</h1>
+                        <p class="hero-description">{{ heroDescription }}</p>
+                        <div class="hero-stats">
+                            <div class="stat">
+                                <span class="stat-number">5000+</span>
+                                <span class="stat-label">Clients satisfaits</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">100%</span>
+                                <span class="stat-label">Naturel</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">48h</span>
+                                <span class="stat-label">Livraison express</span>
+                            </div>
+                        </div>
+                        <div class="hero-actions">
+                            <a routerLink="/catalog" class="btn btn-primary">
+                                <i class="fas fa-shopping-bag"></i>
+                                Découvrir nos produits
+                            </a>
+                            <a href="#features" class="btn btn-outline">
+                                <i class="fas fa-play-circle"></i>
+                                Voir la vidéo
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="hero-image">
+                        <div class="image-frame">
+                            <img [src]="heroImage" alt="Bougies parfumées élégantes">
+                        </div>
+                        <div class="hero-discount">
+                            <span>-30%</span>
+                            <small>Première commande</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section" id="features">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">{{ featuresTitle }}</h2>
+                    <p class="section-subtitle">Découvrez l'excellence de nos créations artisanales</p>
+                </div>
+                
+                <div class="features-content">
+                    <div class="features-text">
+                        <div class="feature-item">
+                            <div class="feature-icon">
+                                <i class="fas fa-seedling"></i>
+                            </div>
+                            <div class="feature-content">
+                                <h3>Ingrédients 100% Naturels</h3>
+                                <p>Nous sélectionnons rigoureusement des ingrédients naturels de la plus haute qualité. Nos huiles essentielles sont pures et nos cires végétales respectueuses de l'environnement.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-item">
+                            <div class="feature-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="feature-content">
+                                <h3>Création Artisanale</h3>
+                                <p>Chaque produit est créé artisanalement par nos maîtres parfumeurs qui allient tradition et innovation avec plus de 15 ans d'expertise.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-item">
+                            <div class="feature-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="feature-content">
+                                <h3>Qualité Certifiée</h3>
+                                <p>Tous nos produits passent des contrôles qualité stricts et sont testés dermatologiquement pour garantir votre sécurité et celle de votre famille.</p>
+                            </div>
+                        </div>
+
+                        <div class="feature-item">
+                            <div class="feature-icon">
+                                <i class="fas fa-recycle"></i>
+                            </div>
+                            <div class="feature-content">
+                                <h3>Éco-responsable</h3>
+                                <p>Nous nous engageons pour la planète avec des emballages recyclables et un processus de fabrication respectueux de l'environnement.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="features-image">
+                        <div class="image-card">
+                            <img [src]="featuresImage" alt="Processus de fabrication artisanal">
+                            <div class="image-overlay">
+                                <h4>Savoir-faire Artisanal</h4>
+                                <p>Créé avec passion depuis 2010</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Products Section avec modale centrale -->
+        <section class="products-section" [class.overlay-active]="showProductOverlay">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">{{ catalogTitle }}</h2>
+                    <p class="section-subtitle">Découvrez nos best-sellers qui enchantent vos intérieurs</p>
+                </div>
+                
+                <div class="products-grid">
+                    <div class="product-card" *ngFor="let product of products">
+                        <div class="product-image">
+                            <div class="arch">
+                                <img [src]="product.image" [alt]="product.name">
+                            </div>
+                            <div class="product-badge">{{ product.badge }}</div>
+                        </div>
+                        
+                        <div class="product-content">
+                            <h3 class="product-name">{{ product.name }}</h3>
+                            <p class="product-description">{{ product.description }}</p>
+                            <div class="product-features">
+                                <span class="feature-tag">{{ product.duration }}</span>
+                                <span class="feature-tag">{{ product.skinType }}</span>
+                            </div>
+                            <div class="product-footer">
+                                <span class="product-price">{{ product.price }}</span>
+                                <button class="btn btn-secondary" (click)="toggleProductDetails(product.id)">
+                                    <i class="fas fa-eye"></i>
+                                    Voir détails
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overlay avec flou -->
+            <div class="products-overlay" [class.active]="showProductOverlay" (click)="closeProductOverlay()"></div>
+
+            <!-- Fenêtre modale au centre -->
+            <div class="product-modal-center" [class.active]="showProductOverlay && expandedProductId">
+                <div class="modal-content-center" *ngIf="expandedProductId">
+                    <button class="modal-close-center" (click)="closeProductOverlay()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    
+                    <div class="modal-body-center" *ngIf="getSelectedProduct() as product">
+                        <div class="modal-image-section-center">
+                            <div class="product-image-modal-center">
+                                <div class="arch-center">
+                                    <img [src]="product.image" [alt]="product.name">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-details-section-center">
+                            <div class="modal-header-center">
+                                <h2 class="modal-title-center">{{ product.name }}</h2>
+                                <div class="modal-price-center">{{ product.price }}</div>
+                            </div>
+                            
+                            <p class="modal-description-center">{{ product.description }}</p>
+                            
+                            <div class="modal-specs-grid-center">
+                                <div class="modal-spec-item-center">
+                                    <span class="modal-spec-label-center">Référence:</span>
+                                    <span class="modal-spec-value-center">{{ product.reference }}</span>
+                                </div>
+                                <div class="modal-spec-item-center">
+                                    <span class="modal-spec-label-center">Poids:</span>
+                                    <span class="modal-spec-value-center">{{ product.weight }}</span>
+                                </div>
+                                <div class="modal-spec-item-center">
+                                    <span class="modal-spec-label-center">Taille:</span>
+                                    <span class="modal-spec-value-center">{{ product.size }}</span>
+                                </div>
+                                <div class="modal-spec-item-center">
+                                    <span class="modal-spec-label-center">Type de peau:</span>
+                                    <span class="modal-spec-value-center">{{ product.skinType }}</span>
+                                </div>
+                                <div class="modal-spec-item-center">
+                                    <span class="modal-spec-label-center">Composition:</span>
+                                    <span class="modal-spec-value-center">{{ product.composition }}</span>
+                                </div>
+                                <div class="modal-spec-item-center">
+                                    <span class="modal-spec-label-center">Durée:</span>
+                                    <span class="modal-spec-value-center">{{ product.duration }}</span>
+                                </div>
+                            </div>
+
+                            <div class="special-offer-banner-center" *ngIf="product.specialOffer">
+                                <i class="fas fa-gift"></i>
+                                {{ product.specialOffer }}
+                            </div>
+                            
+                            <div class="modal-actions-center">
+                                <button class="btn btn-primary add-to-cart-btn-center" (click)="addToCart(product)">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    AJOUTER AU PANIER
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+       
+        <!-- Testimonials Section -->
+        <section class="testimonials-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Ce que disent nos clients</h2>
+                    <p class="section-subtitle">Découvrez les expériences de ceux qui nous font confiance</p>
+                </div>
+                
+                <div class="testimonials-grid">
+                    <div class="testimonial-card">
+                        <div class="testimonial-header">
+                            <div class="client-avatar">
+                                <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face" alt="Marie L.">
+                            </div>
+                            <div class="client-info">
+                                <h4>Marie Laurent</h4>
+                                <div class="rating">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="testimonial-text">"Les bougies parfumées ont transformé mon intérieur. Le parfum vanille-cannelle est divin et dure très longtemps. Livraison ultra-rapide et emballage soigné !"</p>
+                        <div class="testimonial-product">
+                            <small>Acheté : Bougie Vanille-Cannelle</small>
+                        </div>
+                    </div>
+                    
+                    <div class="testimonial-card">
+                        <div class="testimonial-header">
+                            <div class="client-avatar">
+                                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" alt="Pierre D.">
+                            </div>
+                            <div class="client-info">
+                                <h4>Pierre Dubois</h4>
+                                <div class="rating">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="testimonial-text">"Service client exceptionnel ! J'ai reçu des conseils personnalisés pour choisir les parfums adaptés à mon appartement. Le diffuseur lavande est un pur bonheur."</p>
+                        <div class="testimonial-product">
+                            <small>Acheté : Diffuseur Lavande</small>
+                        </div>
+                    </div>
+                    
+                    <div class="testimonial-card">
+                        <div class="testimonial-header">
+                            <div class="client-avatar">
+                                <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face" alt="Sophie M.">
+                            </div>
+                            <div class="client-info">
+                                <h4>Sophie Martin</h4>
+                                <div class="rating">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="testimonial-text">"Je suis très sensible aux odeurs et ces produits naturels ne provoquent aucune allergie. La qualité est au rendez-vous et les parfums sont subtils et raffinés."</p>
+                        <div class="testimonial-product">
+                            <small>Acheté : Spray Agrumes & Ensemble découverte</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonials-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">4.9/5</span>
+                        <span class="stat-label">Note moyenne</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">2000+</span>
+                        <span class="stat-label">Avis vérifiés</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">98%</span>
+                        <span class="stat-label">Clients satisfaits</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <div class="container">
+                <div class="cta-content">
+                    <div class="cta-image">
+                        <div class="rounded-frame">
+                            <img [src]="ctaImage" alt="Offre spéciale limitée">
+                        </div>
+                    </div>
+                    
+                    <div class="cta-text">
+                        <div class="cta-badge">Offre Exclusive</div>
+                        <h2>{{ ctaTitle }}</h2>
+                        <p>{{ ctaDescription }}</p>
+                        
+                        <div class="cta-features">
+                            <div class="cta-feature">
+                                <i class="fas fa-gift"></i>
+                                <span>Code promo envoyé immédiatement</span>
+                            </div>
+                            <div class="cta-feature">
+                                <i class="fas fa-clock"></i>
+                                <span>Offre valable 24h seulement</span>
+                            </div>
+                            <div class="cta-feature">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Sans engagement, désabonnez-vous à tout moment</span>
+                            </div>
+                        </div>
+                        
+                        <form class="newsletter-form" (ngSubmit)="subscribeNewsletter()">
+                            <div class="form-group">
+                                <input type="email" class="form-control" placeholder="Votre adresse email" 
+                                       [(ngModel)]="email" name="email" required>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i>
+                                    Profiter de -15%
+                                </button>
+                            </div>
+                            <p class="form-note">En vous inscrivant, vous acceptez de recevoir nos offres exclusives.</p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3 class="footer-logo">
+                        Byomas<br>
+                    </h3>
+                    <p>Depuis 2010, nous créons des arômes d'exception pour transformer votre maison en un havre de paix et de bien-être.</p>
+                    <div class="social-links">
+                        <a href="javascript:void(0)" (click)="openSocial('instagram')" class="social-link">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="javascript:void(0)" (click)="openSocial('pinterest')" class="social-link">
+                            <i class="fab fa-pinterest"></i>
+                        </a>
+                        <a href="javascript:void(0)" (click)="openSocial('facebook')" class="social-link">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Nos Collections</h4>
+                    <ul class="footer-links">
+                        <li><a routerLink="/catalog">Bougies Parfumées</a></li>
+                        <li><a routerLink="/catalog">Diffuseurs</a></li>
+                        <li><a routerLink="/catalog">Sprays Maison</a></li>
+                        <li><a routerLink="/catalog">Nouveautés</a></li>
+                        <li><a routerLink="/catalog">Best-sellers</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Informations</h4>
+                    <ul class="footer-links">
+                        <li><a routerLink="/about">Notre Histoire</a></li>
+                        <li><a routerLink="/about">Engagements</a></li>
+                        <li><a routerLink="/delivery">Livraison & Retours</a></li>
+                        <li><a routerLink="/contact">Contact</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Contact & Support</h4>
+                    <ul class="footer-contact">
+                        <li><i class="fas fa-phone"></i> +33 1 23 45 67 89</li>
+                        <li><i class="fas fa-envelope"></i> contact@aromesmaison.fr</li>
+                        <li><i class="fas fa-map-marker-alt"></i> 12 Rue des Artisans, 75000 Paris</li>
+                        <li><i class="fas fa-clock"></i> Lun-Ven: 9h-18h</li>
+                    </ul>
+                    <div class="payment-methods">
+                        <i class="fab fa-cc-visa"></i>
+                        <i class="fab fa-cc-mastercard"></i>
+                        <i class="fab fa-cc-paypal"></i>
+                        <i class="fab fa-cc-apple-pay"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 Arômes pour la Maison. Tous droits réservés. | <a href="#">Mentions légales</a> | <a href="#">Politique de confidentialité</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-sidebar" [class.visible]="cartVisible">
+        <div class="cart-header">
+            <h3>Votre Panier</h3>
+            <button class="close-cart" (click)="toggleCart()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="cart-items">
+            <div class="empty-cart" *ngIf="cart.length === 0">
+                <i class="fas fa-shopping-cart"></i>
+                <p>Votre panier est vide</p>
+            </div>
+            
+            <div class="cart-item" *ngFor="let item of cart">
+                <img [src]="item.image" [alt]="item.name">
+                <div class="item-details">
+                    <h4>{{item.name}}</h4>
+                    <p>{{item.price}} DT</p>
+                    <div class="quantity-controls">
+                        <button (click)="decreaseCartQuantity(item)">-</button>
+                        <span>Quantité: {{item.quantity}}</span>
+                        <button (click)="increaseCartQuantity(item)">+</button>
+                        <button class="remove-item" (click)="removeFromCart(item)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cart-footer" *ngIf="cart.length > 0">
+            <div class="cart-total">
+                <span>Total:</span>
+                <span>{{getCartTotal()}} DT</span>
+            </div>
+            <button class="btn btn-primary checkout-btn" (click)="checkout()">Commander</button>
+        </div>
+    </div>
+    
+    <div class="cart-overlay" [class.visible]="cartVisible" (click)="toggleCart()"></div>
+
+    <!-- Checkout Section -->
+    <div class="checkout-section" [class.visible]="showCheckoutSection">
+        <div class="checkout-container">
+            <button class="close-checkout" (click)="showCheckoutSection = false">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2>Finaliser votre commande</h2>
+            
+            <form (ngSubmit)="submitOrder()" [formGroup]="orderForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prénom *</label>
+                        <input type="text" formControlName="firstName" required>
+                        <div class="error-message" *ngIf="orderForm.get('firstName')?.invalid && orderForm.get('firstName')?.touched">
+                            Le prénom est requis (min. 2 caractères)
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Nom *</label>
+                        <input type="text" formControlName="lastName" required>
+                        <div class="error-message" *ngIf="orderForm.get('lastName')?.invalid && orderForm.get('lastName')?.touched">
+                            Le nom est requis (min. 2 caractères)
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Adresse *</label>
+                    <input type="text" formControlName="address" placeholder="Rue, numéro, appartement..." required>
+                    <div class="error-message" *ngIf="orderForm.get('address')?.invalid && orderForm.get('address')?.touched">
+                        L'adresse est requise (min. 5 caractères)
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Gouvernorat *</label>
+                        <select formControlName="governorate" required>
+                            <option value="">Sélectionnez</option>
+                            <option *ngFor="let gov of governorates" [value]="gov">{{gov}}</option>
+                        </select>
+                        <div class="error-message" *ngIf="orderForm.get('governorate')?.invalid && orderForm.get('governorate')?.touched">
+                            Le gouvernorat est requis
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Ville *</label>
+                        <input type="text" formControlName="city" placeholder="Votre ville" required>
+                        <div class="error-message" *ngIf="orderForm.get('city')?.invalid && orderForm.get('city')?.touched">
+                            La ville est requise (min. 2 caractères)
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Téléphone *</label>
+                        <input type="tel" formControlName="phone" placeholder="XX XXX XXX" required>
+                        <div class="error-message" *ngIf="orderForm.get('phone')?.invalid && orderForm.get('phone')?.touched">
+                            Un numéro de téléphone valide (8 chiffres) est requis
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" formControlName="email" placeholder="email@exemple.com">
+                        <div class="error-message" *ngIf="orderForm.get('email')?.invalid && orderForm.get('email')?.touched">
+                            Format d'email invalide
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Notes (optionnel)</label>
+                    <textarea formControlName="notes" placeholder="Instructions spéciales, code de portail, etc..."></textarea>
+                </div>
+                
+                <div class="payment-method">
+                    <h3>Méthode de paiement</h3>
+                    <div class="payment-options">
+                        <label class="payment-option">
+                            <input type="radio" formControlName="paymentMethod" value="delivery">
+                            <div class="option-content">
+                                <i class="fas fa-truck"></i>
+                                <span>Paiement à la livraison</span>
+                                <small>+7 DT de frais de livraison</small>
+                            </div>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" formControlName="paymentMethod" value="online">
+                            <div class="option-content">
+                                <i class="fas fa-credit-card"></i>
+                                <span>Paiement en ligne</span>
+                                <small>Pas de frais de livraison</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="order-summary">
+                    <h3>Récapitulatif de la commande</h3>
+                    <div class="summary-items">
+                        <div class="summary-item" *ngFor="let item of cart">
+                            <span>{{item.name}} x{{item.quantity}}</span>
+                            <span>{{item.price * item.quantity}} DT</span>
+                        </div>
+                        <div class="summary-item shipping" *ngIf="orderForm.get('paymentMethod')?.value === 'delivery'">
+                            <span>Frais de livraison</span>
+                            <span>7 DT</span>
+                        </div>
+                        <div class="summary-total">
+                            <span>Total:</span>
+                            <span>{{getTotalWithShipping()}} DT</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="checkout-actions">
+                    <button type="button" class="btn btn-outline" (click)="backToCart()">
+                        <i class="fas fa-arrow-left"></i>
+                        Retour au panier
+                    </button>
+                    <button type="submit" class="btn btn-primary" [disabled]="orderForm.invalid">
+                        <i class="fas fa-check"></i>
+                        Confirmer la commande ({{getTotalWithShipping()}} DT)
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="notification-toast" *ngIf="notificationMessage" [class.show]="notificationShow">
+        <div class="notification-content">
+            <i class="fas fa-check-circle"></i>
+            <span>{{ notificationMessage }}</span>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,1285 @@
+<div class="soin-page">
+    <!-- Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <!-- Logo -->
+            <div class="logo">
+                <img [src]="headerLogo" 
+                     alt="Soin Naturel" 
+                     class="logo-img">
+                <span class="logo-text">Soin Naturel</span>
+            </div>
+
+            <!-- Navigation Desktop -->
+            <nav class="main-nav">
+                <ul>
+                    <li><a (click)="navigateTo('/')" class="nav-link">{{ translate('home') }}</a></li>
+                    
+                    <!-- Dropdown pour Produits -->
+                    <li class="nav-dropdown">
+                        <a href="javascript:void(0)" class="nav-link dropdown-toggle">
+                            {{ translate('products') }} <i class="fas fa-chevron-down"></i>
+                        </a>
+                        <div class="dropdown-menu">
+                            <a (click)="navigateTo('/huile-olive')" class="dropdown-item">
+                                <i class="fas fa-wine-bottle"></i>
+                                {{ translate('olive_oils') }}
+                            </a>
+                            <a (click)="navigateTo('/savon')" class="dropdown-item">
+                                <i class="fas fa-soap"></i>
+                                {{ translate('natural_soaps') }}
+                            </a>
+                            <a (click)="navigateTo('/huiles-essentielles')" class="dropdown-item">
+                                <i class="fas fa-flask"></i>
+                                {{ translate('essential_oils') }}
+                            </a>
+                            <a (click)="navigateTo('/soin')" class="dropdown-item active">
+                                <i class="fas fa-spa"></i>
+                                {{ translate('natural_care') }}
+                            </a>
+                        </div>
+                    </li>
+                    
+                    <li><a (click)="navigateTo('/about')" class="nav-link">{{ translate('about') }}</a></li>
+                    <li><a (click)="navigateTo('/notre-histoire')" class="nav-link">{{ translate('our_story') }}</a></li>
+                    <li><a href="#contact" class="nav-link" (click)="scrollToSection('contact')">{{ translate('contact') }}</a></li>
+                </ul>
+            </nav>
+
+            <!-- Actions Header -->
+            <div class="header-actions">
+                <!-- Sélecteur de langue -->
+                <div class="language-selector">
+                    <select class="lang-select" (change)="onLanguageChange($event)" [value]="currentLanguage">
+                        <option value="fr">FR</option>
+                        <option value="en">EN</option>
+                        <option value="ar">AR</option>
+                    </select>
+                </div>
+
+                <!-- Barre de recherche -->
+                <div class="search-container">
+                    <input type="text" class="search-input" [placeholder]="translate('search')" 
+                           [(ngModel)]="searchTerm" (keyup.enter)="searchProducts()">
+                    <button class="search-btn" (click)="searchProducts()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                
+                <!-- Boutons d'action -->
+                <div class="action-buttons">
+                    <button class="action-btn" (click)="toggleUserMenu()">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <button class="action-btn cart-icon" (click)="toggleCart()">
+                        <span class="cart-count" *ngIf="cartItemCount > 0">{{ cartItemCount }}</span>
+                    </button>
+                    <button class="action-btn sync-btn" *ngIf="showAdminButton" (click)="syncProductsFromAdmin()" 
+                            title="Synchroniser avec l'admin">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+
+                <!-- Menu Mobile -->
+                <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bande verte spécifique soin -->
+        <div class="header-banner">
+            <div class="header-banner-content">
+                <i class="fas fa-spa"></i>
+                <span *ngIf="currentLanguage === 'fr'">✨ Produits de soin 100% naturels | 🌿 Formulés avec amour | 💫 Résultats visibles dès 7 jours</span>
+                <span *ngIf="currentLanguage === 'en'">✨ 100% natural care products | 🌿 Formulated with love | 💫 Visible results in 7 days</span>
+                <span *ngIf="currentLanguage === 'ar'">✨ منتجات عناية 100% طبيعية | 🌿 مُصممة بحب | 💫 نتائج مرئية خلال 7 أيام</span>
+                <i class="fas fa-spa"></i>
+            </div>
+        </div>
+
+        <!-- Menu Mobile -->
+        <div class="mobile-nav" [class.active]="mobileMenuOpen">
+            <div class="mobile-nav-header">
+                <span class="mobile-nav-title">
+                    {{ currentLanguage === 'fr' ? 'Soins Naturels' : 
+                       currentLanguage === 'en' ? 'Natural Care' : 
+                       'العناية الطبيعية' }}
+                </span>
+                <button class="mobile-close-btn" (click)="closeMobileMenu()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <nav class="mobile-nav-content">
+                <a (click)="navigateTo('/')" class="mobile-nav-link">{{ translate('home') }}</a>
+                
+                <!-- Produits avec sous-menu mobile -->
+                <div class="mobile-submenu">
+                    <div class="mobile-nav-link mobile-submenu-toggle" 
+                         [class.active]="mobileSubmenuOpen" 
+                         (click)="toggleMobileSubmenu()">
+                        <span>{{ translate('products') }}</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="mobile-submenu-items" [class.active]="mobileSubmenuOpen">
+                        <a (click)="navigateTo('/huile-olive')" class="mobile-submenu-link">
+                            <i class="fas fa-wine-bottle"></i>
+                            {{ translate('olive_oils') }}
+                        </a>
+                        <a (click)="navigateTo('/savon')" class="mobile-submenu-link">
+                            <i class="fas fa-soap"></i>
+                            {{ translate('natural_soaps') }}
+                        </a>
+                        <a (click)="navigateTo('/huiles-essentielles')" class="mobile-submenu-link">
+                            <i class="fas fa-flask"></i>
+                            {{ translate('essential_oils') }}
+                        </a>
+                        <a (click)="navigateTo('/soin')" class="mobile-submenu-link active">
+                            <i class="fas fa-spa"></i>
+                            {{ translate('natural_care') }}
+                        </a>
+                    </div>
+                </div>
+                
+                <a (click)="navigateTo('/about')" class="mobile-nav-link">{{ translate('about') }}</a>
+                <a (click)="navigateTo('/notre-histoire')" class="mobile-nav-link">{{ translate('our_story') }}</a>
+                <a href="#contact" class="mobile-nav-link" (click)="scrollToSection('contact')">{{ translate('contact') }}</a>
+                
+                <!-- Filtres mobiles -->
+                <div class="mobile-filters">
+                    <h4>Filtrer par type</h4>
+                    <button class="filter-btn" [class.active]="activeFilter === 'all'" 
+                            (click)="filterProducts('all')">Tous</button>
+                    <button class="filter-btn" [class.active]="activeFilter === 'visage'" 
+                            (click)="filterProducts('visage')">Visage</button>
+                    <button class="filter-btn" [class.active]="activeFilter === 'corps'" 
+                            (click)="filterProducts('corps')">Corps</button>
+                    <button class="filter-btn" [class.active]="activeFilter === 'cheveux'" 
+                            (click)="filterProducts('cheveux')">Cheveux</button>
+                </div>
+                
+                <!-- Sélecteur de langue mobile -->
+                <div class="mobile-language-selector">
+                    <button class="lang-btn" [class.active]="currentLanguage === 'fr'" (click)="changeLanguage('fr')">FR</button>
+                    <button class="lang-btn" [class.active]="currentLanguage === 'en'" (click)="changeLanguage('en')">EN</button>
+                    <button class="lang-btn" [class.active]="currentLanguage === 'ar'" (click)="changeLanguage('ar')">AR</button>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Overlay Mobile -->
+        <div class="nav-overlay" [class.active]="mobileMenuOpen" (click)="closeMobileMenu()"></div>
+    </header>
+
+    <!-- Nouveau Hero Section mis à jour -->
+    <section class="new-hero-section">
+        <div class="container">
+            <div class="new-hero-grid">
+                <!-- Colonne gauche - Contenu texte -->
+                <div class="hero-text-column">
+                    <div class="hero-badge">Artisan Tunisien</div>
+                    
+                    <h1 class="new-hero-title">
+                        Un trésor millénaire pour une beauté moderne
+                    </h1>
+                    
+                    <p class="new-hero-description">
+                        Inspirés par l'huile d'olive, nos soins enveloppent votre peau et vos cheveux de douceur, 
+                        leur offrant éclat, souplesse et vitalité. Un moment de bien-être précieux, rien que pour vous.
+                    </p>
+                    
+                    <!-- Ligne de texte au lieu de statistiques -->
+                    <div class="hero-tagline">
+                        <span>L'excellence du naturel</span>
+                    </div>
+                    
+                    <!-- Boutons CTA dans la même ligne -->
+                    <div class="hero-cta-buttons-inline">
+                        <a href="#products" class="btn btn-primary hero-main-btn">
+                            DÉCOUVRIR NOS PRODUITS
+                        </a>
+                        <button class="btn btn-secondary hero-secondary-btn">
+                            <i class="fas fa-play-circle"></i>
+                            VOIR LA VIDÉO
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Colonne droite - Image produit -->
+                <div class="hero-image-column">
+                    <div class="product-image-frame">
+                        <div class="image-arc-container">
+                            <img src="https://i.ibb.co/dJWtX7S9/unnamed.jpg" 
+                                 alt="Produits naturels artisanaux" 
+                                 class="hero-product-image">
+                        </div>
+                        <!-- Étoile vert olive à droite sous l'image -->
+                        <div class="product-star-badge-right">
+                            <div class="star-shape-right"></div>
+                            <div class="star-text-right">30%</div>
+                            <div class="star-leaves"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Galerie des Soins MIS À JOUR AVEC BOUTON CONSEILS -->
+    <section class="care-gallery-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Nos Soins Spécialisés</h2>
+                <p class="section-subtitle">Découvrez notre gamme complète de soins naturels pour chaque besoin</p>
+                
+                <!-- Bouton "Voir les conseils" ajouté ici -->
+                <div class="advice-button-container">
+                    <button class="btn btn-secondary advice-btn" (click)="showAdviceConsole()">
+                        <i class="fas fa-comment-medical"></i>
+                        VOIR LES CONSEILS
+                    </button>
+                </div>
+            </div>
+            
+            <div class="care-gallery-grid">
+                <!-- Soin Visage - NOUVELLE IMAGE -->
+                <div class="care-gallery-item">
+                    <div class="care-image-container">
+                        <img src="https://i.ibb.co/kgxV3j8S/unnamed-3.jpg" 
+                             alt="Soin Visage Naturel" 
+                             class="care-image">
+                        <div class="care-label">
+                            <i class="fas fa-smile"></i>
+                            <span>Soin Visage</span>
+                        </div>
+                        <div class="care-overlay">
+                            <h3>Soin Visage</h3>
+                            <p>Crèmes, sérums et masques pour une peau rayonnante et hydratée</p>
+                            <button class="btn btn-secondary" (click)="filterProducts('visage')">
+                                Voir les produits
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Soin Corps - NOUVELLE IMAGE -->
+                <div class="care-gallery-item">
+                    <div class="care-image-container">
+                        <img src="https://i.ibb.co/zW15txwH/unnamed-4.jpg" 
+                             alt="Soin Corps Naturel" 
+                             class="care-image">
+                        <div class="care-label">
+                            <i class="fas fa-spa"></i>
+                            <span>Soin Corps</span>
+                        </div>
+                        <div class="care-overlay">
+                            <h3>Soin Corps</h3>
+                            <p>Lotions, huiles et baumes pour un corps doux et nourri</p>
+                            <button class="btn btn-secondary" (click)="filterProducts('corps')">
+                                Voir les produits
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Soin Cheveux - NOUVELLE IMAGE (fournie) -->
+                <div class="care-gallery-item">
+                    <div class="care-image-container">
+                        <img src="https://i.ibb.co/sv2CDH0M/unnamed-5.jpg" 
+                             alt="Soin Cheveux Naturel" 
+                             class="care-image">
+                        <div class="care-label">
+                            <i class="fas fa-cut"></i>
+                            <span>Soin Cheveux</span>
+                        </div>
+                        <div class="care-overlay">
+                            <h3>Soin Cheveux</h3>
+                            <p>Shampoings, masques et huiles pour des cheveux forts et brillants</p>
+                            <button class="btn btn-secondary" (click)="filterProducts('cheveux')">
+                                Voir les produits
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Console de conseils (nouvelle section) -->
+    <div class="advice-console" [class.active]="showAdviceConsoleSection">
+        <div class="advice-console-container">
+            <div class="advice-console-header">
+                <h3>
+                    <i class="fas fa-comment-medical"></i>
+                    Conseils personnalisés selon vos produits
+                </h3>
+                <button class="advice-console-close" (click)="hideAdviceConsole()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="advice-console-content">
+                <!-- Conseils pour Soin Visage -->
+                <div class="advice-category" *ngIf="activeFilter === 'visage' || activeFilter === 'all'">
+                    <h4><i class="fas fa-smile"></i> Conseils Soin Visage</h4>
+                    <div class="advice-list">
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Nettoyez votre visage matin et soir avec un produit doux</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Appliquez une crème hydratante adaptée à votre type de peau</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Utilisez un sérum anti-âge le soir pour une régénération optimale</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Appliquez un masque hydratant 2 fois par semaine</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Protégez votre peau du soleil avec une crème SPF 30+</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Conseils pour Soin Corps -->
+                <div class="advice-category" *ngIf="activeFilter === 'corps' || activeFilter === 'all'">
+                    <h4><i class="fas fa-spa"></i> Conseils Soin Corps</h4>
+                    <div class="advice-list">
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Hydratez votre corps quotidiennement après la douche</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Exfoliez votre peau 1 à 2 fois par semaine</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Utilisez une huile corporelle pour les zones très sèches</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Masquez vos mains et pieds avec des crèmes nourrissantes</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Appliquez un baume relaxant avant le coucher</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Conseils pour Soin Cheveux -->
+                <div class="advice-category" *ngIf="activeFilter === 'cheveux' || activeFilter === 'all'">
+                    <h4><i class="fas fa-cut"></i> Conseils Soin Cheveux</h4>
+                    <div class="advice-list">
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Lavez vos cheveux avec un shampoing doux 2-3 fois par semaine</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Appliquez un masque nourrissant une fois par semaine</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Utilisez une huile capillaire sur les pointes avant le séchage</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Protégez vos cheveux de la chaleur des outils coiffants</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Massez votre cuir chevelu pour stimuler la pousse</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Conseils généraux -->
+                <div class="advice-general">
+                    <h4><i class="fas fa-lightbulb"></i> Conseils généraux</h4>
+                    <div class="advice-list">
+                        <div class="advice-item">
+                            <i class="fas fa-star"></i>
+                            <span>Utilisez toujours des produits adaptés à votre type de peau/cheveux</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-star"></i>
+                            <span>Testez les nouveaux produits sur une petite zone avant utilisation complète</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-star"></i>
+                            <span>Respectez les doses recommandées pour chaque produit</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-star"></i>
+                            <span>Conservez vos produits dans un endroit frais et sec</span>
+                        </div>
+                        <div class="advice-item">
+                            <i class="fas fa-star"></i>
+                            <span>Buvez suffisamment d'eau pour une hydratation de l'intérieur</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Conseils basés sur les produits sélectionnés -->
+                <div class="advice-selected-products" *ngIf="cart.length > 0">
+                    <h4><i class="fas fa-shopping-cart"></i> Conseils pour vos produits sélectionnés</h4>
+                    <div class="advice-list">
+                        <div class="advice-item" *ngFor="let item of cart">
+                            <i class="fas fa-spa"></i>
+                            <span><strong>{{item.name}}</strong>: {{getProductAdvice(item)}}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="advice-console-footer">
+                <button class="btn btn-primary" (click)="hideAdviceConsole()">
+                    <i class="fas fa-check"></i>
+                    J'ai compris
+                </button>
+                <button class="btn btn-secondary" (click)="printAdvice()">
+                    <i class="fas fa-print"></i>
+                    Imprimer les conseils
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deuxième section avec trois cartes et image -->
+    <section class="features-section">
+        <div class="container">
+            <div class="features-grid">
+                <!-- Colonne gauche - Cartes caractéristiques -->
+                <div class="features-column">
+                    <!-- Carte 1 -->
+                    <div class="feature-card">
+                        <div class="feature-icon-circle">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3 class="feature-title">100% Naturel</h3>
+                            <p class="feature-description">
+                                Ingrédients purs et bio sélectionnés avec soin pour leur qualité exceptionnelle.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Carte 2 -->
+                    <div class="feature-card">
+                        <div class="feature-icon-circle">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3 class="feature-title">Testé dermatologiquement</h3>
+                            <p class="feature-description">
+                                Formulés pour tous les types de peau, sans effets secondaires ni irritations.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Carte 3 -->
+                    <div class="feature-card">
+                        <div class="feature-icon-circle">
+                            <i class="fas fa-recycle"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h3 class="feature-title">Éco-responsable</h3>
+                            <p class="feature-description">
+                                Emballages recyclables et processus de fabrication respectueux de l'environnement.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Accroche douce -->
+                    <div class="feature-note">
+                        <span>LOVE THIS? SAVE IT! ✨</span>
+                    </div>
+                </div>
+                
+                <!-- Colonne droite - Image grande -->
+                <div class="features-image-column">
+                    <div class="feature-image-frame">
+                        <img src="https://i.ibb.co/xqcSR8md/unnamed-1.jpg" 
+                             alt="Soins naturels à l'huile d'olive" 
+                             class="feature-main-image">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filtres produits -->
+    <section class="filters-section" id="filters">
+        <div class="container">
+            <div class="filters-container">
+                <div class="filter-categories">
+                    <button class="filter-btn" [class.active]="activeFilter === 'all'" 
+                            (click)="filterProducts('all')">
+                        <i class="fas fa-star"></i>
+                        Tous les soins
+                    </button>
+                    <button class="filter-btn" [class.active]="activeFilter === 'visage'" 
+                            (click)="filterProducts('visage')">
+                        <i class="fas fa-smile"></i>
+                        Soin Visage
+                    </button>
+                    <button class="filter-btn" [class.active]="activeFilter === 'corps'" 
+                            (click)="filterProducts('corps')">
+                        <i class="fas fa-spa"></i>
+                        Soin Corps
+                    </button>
+                    <button class="filter-btn" [class.active]="activeFilter === 'cheveux'" 
+                            (click)="filterProducts('cheveux')">
+                        <i class="fas fa-cut"></i>
+                        Soin Cheveux
+                    </button>
+                    <button class="filter-btn" [class.active]="activeFilter === 'specifiques'" 
+                            (click)="filterProducts('specifiques')">
+                        <i class="fas fa-hand-sparkles"></i>
+                        Soins Spécifiques
+                    </button>
+                </div>
+                
+                <!-- Options de tri -->
+                <div class="sort-options">
+                    <select class="sort-select" (change)="sortProducts($event)">
+                        <option value="featured">Trier par: Nom</option>
+                        <option value="price-asc">Prix: Croissant</option>
+                        <option value="price-desc">Prix: Décroissant</option>
+                        <option value="name">Nom: A-Z</option>
+                        <option value="newest">Nouveautés</option>
+                        <option value="popular">Plus populaires</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section produits -->
+    <section class="products-section" id="products" [class.overlay-active]="showProductOverlay">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Notre Collection Soin</h2>
+                <p class="section-subtitle">
+                    Des produits naturels et efficaces pour répondre aux besoins de votre peau et de vos cheveux.
+                </p>
+                
+                <!-- Statistiques filtrage (admin) -->
+                <div class="filter-stats" *ngIf="showAdminButton && filteringStats">
+                    <small>
+                        <i class="fas fa-info-circle"></i>
+                        {{ filteringStats.total }} produits au total | 
+                        {{ filteringStats.soin }} soins | 
+                        {{ filteringStats.percentage }}% soins
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Chargement -->
+            <div class="loading-container" *ngIf="isLoadingProducts">
+                <div class="loading-spinner">
+                    <i class="fas fa-spa fa-spin"></i>
+                    <p>Chargement des produits de soin...</p>
+                </div>
+            </div>
+            
+            <!-- Aucun produit -->
+            <div class="no-products" *ngIf="!isLoadingProducts && filteredProducts.length === 0">
+                <i class="fas fa-spa"></i>
+                <h3>Aucun produit de soin trouvé</h3>
+                <p *ngIf="searchTerm">Aucun résultat pour "{{ searchTerm }}"</p>
+                <button class="btn btn-primary" (click)="resetFilters()">
+                    <i class="fas fa-redo"></i>
+                    Réinitialiser les filtres
+                </button>
+                <button class="btn btn-secondary" *ngIf="showAdminButton" (click)="syncProductsFromAdmin()">
+                    <i class="fas fa-sync-alt"></i>
+                    Synchroniser avec l'admin
+                </button>
+            </div>
+            
+            <!-- Grille produits -->
+            <div class="products-grid" *ngIf="!isLoadingProducts && filteredProducts.length > 0">
+                <div class="product-card" *ngFor="let product of paginatedProducts" 
+                     [class.out-of-stock]="!canAddToCart(product)"
+                     [attr.data-category]="product.category">
+                    <div class="product-image">
+                        <div class="arch">
+                            <img [src]="product.image" [alt]="product.name" (error)="setDefaultImage($event)">
+                        </div>
+                        <div class="product-badge" [class.badge-out]="!canAddToCart(product)">
+                            {{ canAddToCart(product) ? product.badge : 'Rupture' }}
+                        </div>
+                        
+                        <!-- Actions rapides -->
+                        <div class="product-quick-actions">
+                            <button class="quick-action-btn" (click)="toggleProductDetails(product.id)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="quick-action-btn" (click)="addToCart(product)" 
+                                    [disabled]="!canAddToCart(product)">
+                                <i class="fas fa-shopping-cart"></i>
+                            </button>
+                            <button class="quick-action-btn" (click)="toggleFavorite(product.id)">
+                                <i class="fas fa-heart" [class.active]="isFavorite(product.id)"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-content">
+                        <div class="product-category">
+                            <i class="fas fa-tag"></i>
+                            {{ getProductCategory(product) }}
+                        </div>
+                        
+                        <h3 class="product-name">{{ product.name }}</h3>
+                        <p class="product-description">{{ product.shortDescription || product.description }}</p>
+                        
+                        <div class="product-specs">
+                            <span class="spec-item" *ngIf="product.skinType">
+                                <i class="fas fa-check"></i>
+                                {{ product.skinType }}
+                            </span>
+                            <span class="spec-item" *ngIf="product.duration">
+                                <i class="fas fa-clock"></i>
+                                {{ product.duration }}
+                            </span>
+                        </div>
+                        
+                        <div class="product-footer">
+                            <div class="product-price">
+                                <span class="current-price">{{ product.price }} DT</span>
+                                <span class="old-price" *ngIf="product.oldPrice">
+                                    {{ product.oldPrice }} DT
+                                </span>
+                                <span class="discount" *ngIf="product.oldPrice">
+                                    -{{ calculateDiscount(product) }}%
+                                </span>
+                            </div>
+                            
+                            <div class="stock-info" *ngIf="product.stockQuantity !== undefined">
+                                <small [class.low-stock]="product.stockQuantity < 5" [class.out-of-stock]="product.stockQuantity === 0">
+                                    <i class="fas fa-box"></i>
+                                    {{ product.stockQuantity > 0 ? product.stockQuantity + ' en stock' : 'Rupture' }}
+                                </small>
+                            </div>
+                            
+                            <button class="btn btn-primary product-action-btn" 
+                                    (click)="toggleProductDetails(product.id)"
+                                    [disabled]="!canAddToCart(product)">
+                                <i class="fas fa-eye"></i>
+                                Voir détails
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="pagination" *ngIf="filteredProducts.length > 0">
+                <button class="pagination-btn" [disabled]="currentPage === 1" (click)="previousPage()">
+                    <i class="fas fa-chevron-left"></i>
+                    Précédent
+                </button>
+                
+                <div class="page-numbers">
+                    <span class="page-info">
+                        Page {{ currentPage }} sur {{ totalPages }}
+                    </span>
+                </div>
+                
+                <button class="pagination-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+                    Suivant
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Overlay modale -->
+        <div class="products-overlay" [class.active]="showProductOverlay" (click)="closeProductOverlay()"></div>
+
+        <!-- Modale produit -->
+        <div class="product-modal-center" [class.active]="showProductOverlay && expandedProductId">
+            <div class="modal-content-center" *ngIf="expandedProductId" (click)="$event.stopPropagation()">
+                <button class="modal-close-center" (click)="closeProductOverlay()">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <div class="modal-body-center" *ngIf="getSelectedProduct() as product">
+                    <!-- Images produit -->
+                    <div class="modal-image-section-center">
+                        <div class="product-image-modal-center">
+                            <div class="main-image">
+                                <img [src]="mainModalImage || product.image" [alt]="product.name" (error)="setDefaultImage($event)">
+                            </div>
+                            
+                            <!-- Galerie miniatures -->
+                            <div class="image-gallery" *ngIf="product.gallery && product.gallery.length > 0">
+                                <div class="gallery-thumb" *ngFor="let img of product.gallery; let i = index"
+                                     [class.active]="img === mainModalImage"
+                                     (click)="changeMainImage(img)">
+                                    <img [src]="img" [alt]="'Image ' + (i + 1)">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tags produit -->
+                        <div class="product-tags">
+                            <span class="product-tag" *ngIf="product.isNew">
+                                <i class="fas fa-certificate"></i> Nouveau
+                            </span>
+                            <span class="product-tag" *ngIf="product.isBestSeller">
+                                <i class="fas fa-crown"></i> Best-seller
+                            </span>
+                            <span class="product-tag" *ngIf="product.sustainable">
+                                <i class="fas fa-leaf"></i> Éco-friendly
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Détails produit -->
+                    <div class="modal-details-section-center">
+                        <div class="modal-header-center">
+                            <div class="category-badge">
+                                <i class="fas fa-spa"></i>
+                                {{ getProductCategory(product) }}
+                            </div>
+                            <h2 class="modal-title-center">{{ product.name }}</h2>
+                            <div class="modal-price-center">
+                                <span class="current-price">{{ product.price }} DT</span>
+                                <span class="old-price" *ngIf="product.oldPrice">
+                                    {{ product.oldPrice }} DT
+                                </span>
+                                <span class="discount-badge" *ngIf="product.oldPrice">
+                                    -{{ calculateDiscount(product) }}%
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Description complète -->
+                        <div class="modal-description-center">
+                            <h4>Description</h4>
+                            <p>{{ product.fullDescription || product.description }}</p>
+                        </div>
+                        
+                        <!-- Caractéristiques -->
+                        <div class="modal-features-grid-center">
+                            <div class="feature-item" *ngIf="product.skinType">
+                                <i class="fas fa-check-circle"></i>
+                                <div>
+                                    <strong>Type de peau:</strong>
+                                    <span>{{ product.skinType }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-item" *ngIf="product.composition">
+                                <i class="fas fa-leaf"></i>
+                                <div>
+                                    <strong>Composition:</strong>
+                                    <span>{{ product.composition }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-item" *ngIf="product.duration">
+                                <i class="fas fa-clock"></i>
+                                <div>
+                                    <strong>Durée:</strong>
+                                    <span>{{ product.duration }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-item" *ngIf="product.volume">
+                                <i class="fas fa-weight"></i>
+                                <div>
+                                    <strong>Volume:</strong>
+                                    <span>{{ product.volume }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-item" *ngIf="product.madeIn">
+                                <i class="fas fa-globe"></i>
+                                <div>
+                                    <strong>Fabriqué en:</strong>
+                                    <span>{{ product.madeIn }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Instructions d'utilisation -->
+                        <div class="usage-instructions" *ngIf="product.usageInstructions">
+                            <h4><i class="fas fa-book"></i> Mode d'emploi</h4>
+                            <p>{{ product.usageInstructions }}</p>
+                        </div>
+                        
+                        <!-- Stock et quantité -->
+                        <div class="stock-section">
+                            <div class="stock-status" [class.in-stock]="canAddToCart(product)"
+                                 [class.out-of-stock]="!canAddToCart(product)">
+                                <i class="fas" [class.fa-check-circle]="canAddToCart(product)" 
+                                   [class.fa-times-circle]="!canAddToCart(product)"></i>
+                                <span>{{ canAddToCart(product) ? 'En stock' : 'Rupture de stock' }}</span>
+                            </div>
+                            
+                            <!-- Sélecteur quantité -->
+                            <div class="quantity-selector" *ngIf="canAddToCart(product)">
+                                <label>Quantité:</label>
+                                <div class="quantity-controls">
+                                    <button class="qty-btn" (click)="decreaseQuantity()" 
+                                            [disabled]="selectedQuantity <= 1">-</button>
+                                    <input type="number" [(ngModel)]="selectedQuantity" 
+                                           min="1" [max]="getMaxQuantity(product)"
+                                           (change)="validateQuantity(product)">
+                                    <button class="qty-btn" (click)="increaseQuantity(product)">+</button>
+                                </div>
+                                <small *ngIf="product.stockQuantity">
+                                    {{ product.stockQuantity }} disponibles
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="modal-actions-center">
+                            <button class="btn btn-primary add-to-cart-btn-center" 
+                                    (click)="addToCartFromModal(product)"
+                                    [disabled]="!canAddToCart(product)">
+                                <i class="fas fa-shopping-cart"></i>
+                                Ajouter au panier ({{ getCartItemQuantity(product.id) }})
+                            </button>
+                            
+                            <button class="btn btn-secondary" (click)="toggleFavorite(product.id)">
+                                <i class="fas fa-heart" [class.active]="isFavorite(product.id)"></i>
+                                {{ isFavorite(product.id) ? 'Retirer des favoris' : 'Ajouter aux favoris' }}
+                            </button>
+                        </div>
+                        
+                        <!-- Livraison et garanties -->
+                        <div class="delivery-info">
+                            <div class="delivery-item">
+                                <i class="fas fa-shipping-fast"></i>
+                                <div>
+                                    <strong>Livraison rapide:</strong>
+                                    <span>48h partout en Tunisie</span>
+                                </div>
+                            </div>
+                            <div class="delivery-item">
+                                <i class="fas fa-shield-alt"></i>
+                                <div>
+                                    <strong>Garantie satisfaction:</strong>
+                                    <span>30 jours satisfait ou remboursé</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Témoignages -->
+    <section class="testimonials-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Ils nous font confiance</h2>
+                <p class="section-subtitle">Découvrez les expériences de nos clients satisfaits</p>
+            </div>
+            
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-header">
+                        <div class="client-avatar">
+                            <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face" alt="Sarah M.">
+                        </div>
+                        <div class="client-info">
+                            <h4>Sarah Martin</h4>
+                            <div class="rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="testimonial-text">"La crème visage a transformé ma peau en seulement 2 semaines. Plus douce, plus lumineuse, et 100% naturelle !"</p>
+                    <div class="testimonial-product">
+                        <small>Acheté : Crème Visage Hydratante</small>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="testimonial-header">
+                        <div class="client-avatar">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" alt="Karim B.">
+                        </div>
+                        <div class="client-info">
+                            <h4>Karim Ben Salah</h4>
+                            <div class="rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="testimonial-text">"L'huile pour cheveux a stoppé ma chute de cheveux. Un produit miracle et naturel !"</p>
+                    <div class="testimonial-product">
+                        <small>Acheté : Huile Fortifiante Cheveux</small>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="testimonial-header">
+                        <div class="client-avatar">
+                            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face" alt="Léa T.">
+                        </div>
+                        <div class="client-info">
+                            <h4>Léa Tremblay</h4>
+                            <div class="rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="testimonial-text">"Le baume corps est devenu mon essentiel quotidien. Odeur divine et texture parfaite !"</p>
+                    <div class="testimonial-product">
+                        <small>Acheté : Baume Corps Relaxant</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Newsletter -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <div class="cta-image">
+                    <div class="rounded-frame">
+                        <img src="https://i.ibb.co/b5rG5xcX/unnamed-2.jpg" alt="Offre soin">
+                    </div>
+                </div>
+                
+                <div class="cta-text">
+                    <div class="cta-badge">Conseil Gratuit</div>
+                    <h2>Besoin d'aide pour choisir ?</h2>
+                    <p>Notre équipe d'experts en soin naturel vous aide à trouver les produits parfaits pour vos besoins spécifiques.</p>
+                    
+                    <div class="cta-features">
+                        <div class="cta-feature">
+                            <i class="fas fa-comment-medical"></i>
+                            <span>Consultation gratuite par téléphone</span>
+                        </div>
+                        <div class="cta-feature">
+                            <i class="fas fa-gift"></i>
+                            <span>Échantillons offerts avec chaque commande</span>
+                        </div>
+                        <div class="cta-feature">
+                            <i class="fas fa-shipping-fast"></i>
+                            <span>Livraison express 24h dans Tunis</span>
+                        </div>
+                    </div>
+                    
+                    <div class="cta-actions">
+                        <button class="btn btn-primary" (click)="openWhatsApp()">
+                            <i class="fab fa-whatsapp"></i>
+                            Discuter sur WhatsApp
+                        </button>
+                        <button class="btn btn-secondary" (click)="scrollToSection('products')">
+                            <i class="fas fa-shopping-bag"></i>
+                            Voir tous les produits
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3 class="footer-logo">
+                       Byomas<br>
+                    </h3>
+                    <p>Depuis 2015, nous créons des soins naturels d'exception pour une beauté authentique et un bien-être durable.</p>
+                    <div class="social-links">
+                        <a href="javascript:void(0)" (click)="openSocial('instagram')" class="social-link">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="javascript:void(0)" (click)="openSocial('facebook')" class="social-link">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="javascript:void(0)" (click)="openSocial('pinterest')" class="social-link">
+                            <i class="fab fa-pinterest"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Catégories</h4>
+                    <ul class="footer-links">
+                        <li><a (click)="filterProducts('visage')">Soin Visage</a></li>
+                        <li><a (click)="filterProducts('corps')">Soin Corps</a></li>
+                        <li><a (click)="filterProducts('cheveux')">Soin Cheveux</a></li>
+                        <li><a (click)="filterProducts('specifiques')">Soins Spécifiques</a></li>
+                        <li><a (click)="filterProducts('all')">Tous les produits</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Informations</h4>
+                    <ul class="footer-links">
+                        <li><a routerLink="/about">Notre Philosophie</a></li>
+                        <li><a routerLink="/ingredients">Nos Ingrédients</a></li>
+                        <li><a href="#guide">Guide des soins</a></li>
+                        <li><a routerLink="/contact">Contact</a></li>
+                        <li><a href="#">FAQ Soins</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul class="footer-contact">
+                        <li><i class="fas fa-phone"></i> +216 70 123 456</li>
+                        <li><i class="fas fa-envelope"></i> contact@soinnaturel.tn</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Rue des Soins, Tunis 1002</li>
+                        <li><i class="fas fa-clock"></i> Lun-Sam: 9h-18h</li>
+                    </ul>
+                    <div class="payment-methods">
+                        <i class="fab fa-cc-visa"></i>
+                        <i class="fab fa-cc-mastercard"></i>
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 Soin Naturel. Tous droits réservés. | <a href="#">Mentions légales</a> | <a href="#">Politique de confidentialité</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-sidebar" [class.visible]="cartVisible">
+        <div class="cart-header">
+            <h3>Votre Panier Soins</h3>
+            <button class="close-cart" (click)="toggleCart()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="cart-items">
+            <div class="empty-cart" *ngIf="cart.length === 0">
+                <i class="fas fa-shopping-cart"></i>
+                <p>Votre panier est vide</p>
+                <button class="btn btn-primary" (click)="scrollToSection('products')">
+                    Découvrir nos soins
+                </button>
+            </div>
+            
+            <div class="cart-item" *ngFor="let item of cart">
+                <img [src]="item.image" [alt]="item.name">
+                <div class="item-details">
+                    <h4>{{item.name}}</h4>
+                    <p>{{item.price}} DT</p>
+                    <div class="quantity-controls">
+                        <button (click)="decreaseCartQuantity(item)">-</button>
+                        <span>{{item.quantity}}</span>
+                        <button (click)="increaseCartQuantity(item)" 
+                                [disabled]="!canIncreaseQuantity(item)">+</button>
+                        <button class="remove-item" (click)="removeFromCart(item)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <small class="item-total">{{item.price * item.quantity}} DT</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cart-footer" *ngIf="cart.length > 0">
+            <div class="cart-summary">
+                <div class="summary-line">
+                    <span>Sous-total:</span>
+                    <span>{{getCartTotal()}} DT</span>
+                </div>
+                <div class="summary-line" *ngIf="hasDeliveryCost()">
+                    <span>Livraison:</span>
+                    <span>7 DT</span>
+                </div>
+                <div class="summary-line total">
+                    <span>Total:</span>
+                    <span>{{getTotalWithShipping()}} DT</span>
+                </div>
+            </div>
+            
+            <div class="cart-actions">
+                <button class="btn btn-secondary" (click)="continueShopping()">
+                    Continuer les achats
+                </button>
+                <button class="btn btn-primary checkout-btn" (click)="checkout()">
+                    Commander ({{getTotalWithShipping()}} DT)
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="cart-overlay" [class.visible]="cartVisible" (click)="toggleCart()"></div>
+
+    <!-- Checkout Section -->
+    <div class="checkout-section" [class.visible]="showCheckoutSection">
+        <div class="checkout-container">
+            <button class="close-checkout" (click)="showCheckoutSection = false">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h2>Finaliser votre commande</h2>
+            
+            <form (ngSubmit)="submitOrder()" [formGroup]="orderForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prénom *</label>
+                        <input type="text" formControlName="firstName" required>
+                        <div class="error-message" *ngIf="orderForm.get('firstName')?.invalid && orderForm.get('firstName')?.touched">
+                            Le prénom est requis (min. 2 caractères)
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Nom *</label>
+                        <input type="text" formControlName="lastName" required>
+                        <div class="error-message" *ngIf="orderForm.get('lastName')?.invalid && orderForm.get('lastName')?.touched">
+                            Le nom est requis (min. 2 caractères)
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Adresse *</label>
+                    <input type="text" formControlName="address" placeholder="Rue, numéro, appartement..." required>
+                    <div class="error-message" *ngIf="orderForm.get('address')?.invalid && orderForm.get('address')?.touched">
+                        L'adresse est requise (min. 5 caractères)
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Gouvernorat *</label>
+                        <select formControlName="governorate" required>
+                            <option value="">Sélectionnez</option>
+                            <option *ngFor="let gov of governorates" [value]="gov">{{gov}}</option>
+                        </select>
+                        <div class="error-message" *ngIf="orderForm.get('governorate')?.invalid && orderForm.get('governorate')?.touched">
+                            Le gouvernorat est requis
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Ville *</label>
+                        <input type="text" formControlName="city" placeholder="Votre ville" required>
+                        <div class="error-message" *ngIf="orderForm.get('city')?.invalid && orderForm.get('city')?.touched">
+                            La ville est requise (min. 2 caractères)
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Téléphone *</label>
+                        <input type="tel" formControlName="phone" placeholder="XX XXX XXX" required>
+                        <div class="error-message" *ngIf="orderForm.get('phone')?.invalid && orderForm.get('phone')?.touched">
+                            Un numéro de téléphone valide (8 chiffres) est requis
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" formControlName="email" placeholder="email@exemple.com">
+                        <div class="error-message" *ngIf="orderForm.get('email')?.invalid && orderForm.get('email')?.touched">
+                            Format d'email invalide
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Notes (optionnel)</label>
+                    <textarea formControlName="notes" placeholder="Instructions spéciales, code de portail, etc..."></textarea>
+                </div>
+                
+                <div class="payment-method">
+                    <h3>Méthode de paiement</h3>
+                    <div class="payment-options">
+                        <label class="payment-option">
+                            <input type="radio" formControlName="paymentMethod" value="delivery">
+                            <div class="option-content">
+                                <i class="fas fa-truck"></i>
+                                <span>Paiement à la livraison</span>
+                                <small>+7 DT de frais de livraison</small>
+                            </div>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" formControlName="paymentMethod" value="online">
+                            <div class="option-content">
+                                <i class="fas fa-credit-card"></i>
+                                <span>Paiement en ligne</span>
+                                <small>Pas de frais de livraison</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="order-summary">
+                    <h3>Récapitulatif de la commande</h3>
+                    <div class="summary-items">
+                        <div class="summary-item" *ngFor="let item of cart">
+                            <span>{{item.name}} x{{item.quantity}}</span>
+                            <span>{{item.price * item.quantity}} DT</span>
+                        </div>
+                        <div class="summary-item shipping" *ngIf="orderForm.get('paymentMethod')?.value === 'delivery'">
+                            <span>Frais de livraison</span>
+                            <span>7 DT</span>
+                        </div>
+                        <div class="summary-total">
+                            <span>Total:</span>
+                            <span>{{getTotalWithShipping()}} DT</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="checkout-actions">
+                    <button type="button" class="btn btn-outline" (click)="backToCart()">
+                        <i class="fas fa-arrow-left"></i>
+                        Retour au panier
+                    </button>
+                    <button type="submit" class="btn btn-primary" [disabled]="orderForm.invalid">
+                        <i class="fas fa-check"></i>
+                        Confirmer la commande ({{getTotalWithShipping()}} DT)
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="notification-toast" *ngIf="notificationMessage" [class.show]="notificationShow">
+        <div class="notification-content">
+            <i class="fas" [class.fa-check-circle]="notificationType === 'success'" 
+               [class.fa-exclamation-circle]="notificationType === 'error'"
+               [class.fa-info-circle]="notificationType === 'info'"
+               [class.fa-exclamation-triangle]="notificationType === 'warning'"></i>
+            <span>{{ notificationMessage }}</span>
+        </div>
+    </div>
+    
+</div>

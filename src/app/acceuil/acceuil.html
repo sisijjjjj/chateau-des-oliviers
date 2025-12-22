@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden" [dir]="textDirection">
+        <!-- Header Professionnel et Chic -->
+        <header class="site-header">
+            <div class="header-container">
+                <!-- Logo -->
+                <div class="logo">
+                    <img src="https://tse3.mm.bing.net/th/id/OIP.saQdJk7UUWGCqWIRk9NOAAHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" 
+                         alt="Olive Grove Essences" 
+                         class="logo-img">
+                </div>
+
+                <!-- Navigation Desktop -->
+                <nav class="main-nav">
+                    <ul>
+                        <li><a (click)="navigateTo('/')" class="nav-link active">{{ translate('home') }}</a></li>
+                        <li class="nav-dropdown">
+                            <a href="javascript:void(0)" class="nav-link dropdown-toggle">
+                                {{ translate('products') }} <i class="fas fa-chevron-down"></i>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a (click)="navigateTo('/huile-olive')" class="dropdown-item">
+                                    <i class="fas fa-wine-bottle"></i>
+                                    {{ currentLanguage === 'fr' ? 'Huiles d\'Olive' : 
+                                       currentLanguage === 'en' ? 'Olive Oils' : 
+                                       'زيوت الزيتون' }}
+                                </a>
+                                <a (click)="navigateTo('/savon')" class="dropdown-item">
+                                    <i class="fas fa-soap"></i>
+                                    {{ currentLanguage === 'fr' ? 'Savons Naturels' : 
+                                       currentLanguage === 'en' ? 'Natural Soaps' : 
+                                       'صابون طبيعي' }}
+                                </a>
+                                <a (click)="navigateTo('/huiles-essentielles')" class="dropdown-item">
+                                    <i class="fas fa-flask"></i>
+                                    {{ currentLanguage === 'fr' ? 'Huiles Essentielles' : 
+                                       currentLanguage === 'en' ? 'Essential Oils' : 
+                                       'الزيوت الأساسية' }}
+                                </a>
+                                <a (click)="navigateTo('/soin')" class="dropdown-item">
+                                    <i class="fas fa-spa"></i>
+                                    {{ currentLanguage === 'fr' ? 'Soins Naturels' : 
+                                       currentLanguage === 'en' ? 'Natural Care' : 
+                                       'العناية الطبيعية' }}
+                                </a>
+                            </div>
+                        </li>
+                        <li><a (click)="navigateTo('/about')" class="nav-link">{{ translate('about') }}</a></li>
+                        <li><a (click)="navigateTo('/notre-histoire')" class="nav-link">
+                            {{ currentLanguage === 'fr' ? 'Notre histoire' : 
+                               currentLanguage === 'en' ? 'Our Story' : 
+                               'قصتنا' }}
+                        </a></li>
+                        <li><a href="#contact" class="nav-link">{{ translate('contact') }}</a></li>
+                    </ul>
+                </nav>
+
+                <!-- Actions Header -->
+                <div class="header-actions">
+                    <!-- Sélecteur de langue -->
+                    <div class="language-selector">
+                        <select class="lang-select" (change)="onLanguageChange($event)" [value]="currentLanguage">
+                            <option value="fr">FR</option>
+                            <option value="en">EN</option>
+                            <option value="ar">AR</option>
+                        </select>
+                    </div>
+
+                    <div class="search-container">
+                        <input type="text" class="search-input" [placeholder]="translate('search')">
+                        <button class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn">
+                            <i class="fas fa-user"></i>
+                        </button>
+                        <button class="action-btn cart-icon" (click)="toggleCart()">
+                            <i class="fas fa-shopping-bag"></i>
+                            <span class="cart-count" *ngIf="cartItemCount > 0">{{ cartItemCount }}</span>
+                        </button>
+                    </div>
+
+                    <!-- Menu Mobile -->
+                    <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Menu Mobile -->
+            <div class="mobile-nav" [class.active]="mobileMenuOpen">
+                <div class="mobile-nav-header">
+                    <span class="mobile-nav-title">
+                        {{ currentLanguage === 'fr' ? 'Menu' : 
+                           currentLanguage === 'en' ? 'Menu' : 
+                           'القائمة' }}
+                    </span>
+                    <button class="mobile-close-btn" (click)="closeMobileMenu()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <nav class="mobile-nav-content">
+                    <a (click)="navigateTo('/')" class="mobile-nav-link">{{ translate('home') }}</a>
+                    
+                    <!-- Produits avec sous-menu mobile -->
+                    <div class="mobile-submenu">
+                        <a href="javascript:void(0)" class="mobile-nav-link submenu-toggle" (click)="toggleMobileSubmenu()">
+                            {{ translate('products') }} <i class="fas fa-chevron-down"></i>
+                        </a>
+                        <div class="mobile-submenu-items" [class.active]="mobileSubmenuOpen">
+                            <a (click)="navigateTo('/huile-olive')" class="mobile-submenu-link">
+                                <i class="fas fa-wine-bottle"></i>
+                                {{ currentLanguage === 'fr' ? 'Huiles d\'Olive' : 
+                                   currentLanguage === 'en' ? 'Olive Oils' : 
+                                   'زيوت الزيتون' }}
+                            </a>
+                            <a (click)="navigateTo('/savon')" class="mobile-submenu-link">
+                                <i class="fas fa-soap"></i>
+                                {{ currentLanguage === 'fr' ? 'Savons Naturels' : 
+                                   currentLanguage === 'en' ? 'Natural Soaps' : 
+                                   'صابون طبيعي' }}
+                            </a>
+                            <a (click)="navigateTo('/huiles-essentielles')" class="mobile-submenu-link">
+                                <i class="fas fa-flask"></i>
+                                {{ currentLanguage === 'fr' ? 'Huiles Essentielles' : 
+                                   currentLanguage === 'en' ? 'Essential Oils' : 
+                                   'الزيوت الأساسية' }}
+                            </a>
+                            <a (click)="navigateTo('/soins')" class="mobile-submenu-link">
+                                <i class="fas fa-spa"></i>
+                                {{ currentLanguage === 'fr' ? 'Soins Naturels' : 
+                                   currentLanguage === 'en' ? 'Natural Care' : 
+                                   'العناية الطبيعية' }}
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <a (click)="navigateTo('/about')" class="mobile-nav-link">{{ translate('about') }}</a>
+                    <a (click)="navigateTo('/notre-histoire')" class="mobile-nav-link">
+                        {{ currentLanguage === 'fr' ? 'Notre histoire' : 
+                           currentLanguage === 'en' ? 'Our Story' : 
+                           'قصتنا' }}
+                    </a>
+                    <a href="#contact" class="mobile-nav-link" (click)="scrollToSection('contact')">{{ translate('contact') }}</a>
+                    
+                    <!-- Sélecteur de langue mobile -->
+                    <div class="mobile-language-selector">
+                        <button class="lang-btn" [class.active]="currentLanguage === 'fr'" (click)="changeLanguage('fr')">FR</button>
+                        <button class="lang-btn" [class.active]="currentLanguage === 'en'" (click)="changeLanguage('en')">EN</button>
+                        <button class="lang-btn" [class.active]="currentLanguage === 'ar'" (click)="changeLanguage('ar')">AR</button>
+                    </div>
+                </nav>
+            </div>
+
+            <!-- Overlay Mobile -->
+            <div class="nav-overlay" [class.active]="mobileMenuOpen" (click)="closeMobileMenu()"></div>
+        </header>
+
+        <!-- Hero Slider avec changement automatique -->
+        <section id="accueil" class="hero-slider">
+            <div class="slider-container">
+                <div class="slider-track" [style.transform]="'translateX(-' + (currentSlide * 100) + '%)'">
+                    <!-- Slide 1 -->
+                    <div class="slide" *ngFor="let image of heroImages; let i = index" 
+                         [class.active]="i === currentSlide">
+                        <img [src]="image" 
+                             [alt]="'Slide ' + (i + 1)" 
+                             class="slide-media">
+                        <div class="slide-content">
+                            <h2 class="slide-title">{{ translate('heroTitle') }}</h2>
+                            <p class="slide-description">
+                                {{ i === 0 ? translate('heroDesc1') : 
+                                   i === 1 ? translate('heroDesc2') : 
+                                   translate('heroDesc3') }}
+                            </p>
+                            <button class="slide-button" (click)="scrollToSection('produits')">
+                                <i class="fas fa-arrow-right"></i>
+                                {{ translate('discover') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contrôles du slider -->
+            <div class="slider-controls">
+                <div class="slider-dots">
+                    <button *ngFor="let image of heroImages; let i = index" 
+                            class="slider-dot" 
+                            [class.active]="i === currentSlide"
+                            (click)="goToSlide(i)"></button>
+                </div>
+</div>
+        </section>
+
+        <!-- Section Produits -->
+        <section id="produits" class="products-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">{{ translate('productsTitle') }}</h2>
+                    <p class="section-description">
+                        {{ translate('productsDesc') }}
+                    </p>
+                </div>
+
+                <!-- Bannière Offre Spéciale -->
+                <div class="special-offer-banner">
+                    <div class="offer-content">
+                        <i class="fas fa-gift offer-icon"></i>
+                        <div class="offer-text">
+                            <strong>{{ translate('specialOffer') }}</strong>
+                            <span>{{ translate('until') }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="products-grid">
+                    <div *ngFor="let product of featuredProducts" class="product-card">
+                        <div class="product-image">
+                            <img [src]="product.image" [alt]="product.name" class="product-img">
+                            <div *ngIf="product.originalPrice" class="product-badge">
+                                <i class="fas fa-tag"></i>
+                                -{{ calculateDiscount(product.originalPrice, product.price) }}%
+                            </div>
+                            <div *ngIf="product.badge && product.id !== 1 && product.id !== 4" class="product-tag" [class.special]="product.badge === 'POPULAIRE'">
+                                <i class="fas fa-star"></i>
+                                {{ currentLanguage === 'fr' ? product.badge : 
+                                   currentLanguage === 'en' ? (product.badge === 'POPULAIRE' ? 'POPULAR' : product.badge) : 
+                                   (product.badge === 'POPULAIRE' ? 'شائع' : product.badge) }}
+                            </div>
+                        </div>
+                        
+                        <div class="product-content">
+                            <h3 class="product-name">{{ product.name }}</h3>
+                            <p class="product-description">{{ product.description }}</p>
+                            
+                            <div class="product-features">
+                                <span *ngFor="let feature of product.features" class="feature-tag">
+                                    <i class="fas fa-check"></i>
+                                    {{ feature }}
+                                </span>
+                            </div>
+                            
+                            <div class="product-pricing">
+                                <div class="price-container">
+                                    <span class="current-price">{{ formatPrice(product.price) }}</span>
+                                    <span *ngIf="product.originalPrice" class="original-price">
+                                        {{ formatPrice(product.originalPrice) }}
+                                    </span>
+                                </div>
+                                <button class="add-to-cart-btn" (click)="addToCart(product)">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    {{ translate('addToCart') }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section À Propos -->
+        <section id="about" class="about-section">
+            <div class="container">
+                <div class="about-grid">
+                    <div class="about-content">
+                        <h2 class="about-title">{{ translate('aboutTitle') }}</h2>
+                        <p class="about-description">
+                            {{ translate('aboutDesc') }}
+                        </p>
+                        <div class="about-features">
+                            <div class="feature">
+                                <div class="feature-icon">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                                <div class="feature-content">
+                                    <h4>{{ translate('feature1') }}</h4>
+                                    <p><i class="fas fa-check"></i> {{ currentLanguage === 'fr' ? 'Produits 100% naturels' : 
+                                                                      currentLanguage === 'en' ? '100% natural products' : 
+                                                                      'منتجات طبيعية 100%' }}</p>
+                                </div>
+                            </div>
+                            <div class="feature">
+                                <div class="feature-icon">
+                                    <i class="fas fa-certificate"></i>
+                                </div>
+                                <div class="feature-content">
+                                    <h4>{{ translate('feature2') }}</h4>
+                                    <p><i class="fas fa-check"></i> {{ currentLanguage === 'fr' ? 'Certification bio' : 
+                                                                      currentLanguage === 'en' ? 'Organic certification' : 
+                                                                      'شهادة عضوية' }}</p>
+                                </div>
+                            </div>
+                            <div class="feature">
+                                <div class="feature-icon">
+                                    <i class="fas fa-heart"></i>
+                                </div>
+                                <div class="feature-content">
+                                    <h4>{{ translate('feature3') }}</h4>
+                                    <p><i class="fas fa-check"></i> {{ currentLanguage === 'fr' ? 'Savoir-faire artisanal' : 
+                                                                      currentLanguage === 'en' ? 'Artisanal know-how' : 
+                                                                      'حرفية يدوية' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="discover-btn" (click)="scrollToSection('produits')">
+                            <i class="fas fa-box-open"></i>
+                            {{ translate('discoverProducts') }}
+                        </button>
+                    </div>
+                    
+                    <!-- Images à droite en petite dimension -->
+                    <div class="about-images-stacked">
+                        <div class="mini-stacked-image image-1">
+                            <img src="https://i.pinimg.com/1200x/b4/39/7e/b4397e2d0c6f20472df91c4ba9d54ce4.jpg" 
+                                 alt="Huile d'olive" class="mini-stacked-img">
+                            <div class="mini-image-overlay">
+                                <h4 class="mini-image-title">
+                                    {{ currentLanguage === 'fr' ? 'Huile d\'Olive' : 
+                                       currentLanguage === 'en' ? 'Olive Oil' : 
+                                       'زيت الزيتون' }}
+                                </h4>
+                            </div>
+                        </div>
+                        
+                        <div class="mini-stacked-image image-2">
+                            <img src="https://i.pinimg.com/1200x/3a/77/57/3a7757e6aee76a10ce51908c208fa707.jpg" 
+                                 alt="Savons naturels" class="mini-stacked-img">
+                            <div class="mini-image-overlay">
+                                <h4 class="mini-image-title">
+                                    {{ currentLanguage === 'fr' ? 'Savons' : 
+                                       currentLanguage === 'en' ? 'Soaps' : 
+                                       'صابون' }}
+                                </h4>
+                            </div>
+                        </div>
+                        
+                        <div class="mini-stacked-image image-3">
+                            <img src="https://i.pinimg.com/1200x/01/f4/a4/01f4a4d78b3a5c916c1d5cea98f91ba6.jpg" 
+                                 alt="Huiles essentielles" class="mini-stacked-img">
+                            <div class="mini-image-overlay">
+                                <h4 class="mini-image-title">
+                                    {{ currentLanguage === 'fr' ? 'Essences' : 
+                                       currentLanguage === 'en' ? 'Essences' : 
+                                       'العطور' }}
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Remise -->
+        <section class="process-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        {{ currentLanguage === 'fr' ? 'Remise Exceptionnelle' : 
+                           currentLanguage === 'en' ? 'Exceptional Discount' : 
+                           'خصم استثنائي' }}
+                    </h2>
+                    <p class="section-description">
+                        {{ currentLanguage === 'fr' ? 'Profitez de nos offres spéciales et découvrez la qualité exceptionnelle de nos produits' : 
+                           currentLanguage === 'en' ? 'Enjoy our special offers and discover the exceptional quality of our products' : 
+                           'استمتع بعروضنا الخاصة واكتشف الجودة الاستثنائية لمنتجاتنا' }}
+                    </p>
+                </div>
+                <div class="process-steps">
+                    <div class="process-step">
+                        <div class="step-icon">
+                            <i class="fas fa-tag"></i>
+                        </div>
+                        <h3>{{ currentLanguage === 'fr' ? '-20% de Réduction' : 
+                               currentLanguage === 'en' ? '-20% Discount' : 
+                               'خصم 20%-' }}</h3>
+                        <p><i class="fas fa-check-circle"></i> 
+                            {{ currentLanguage === 'fr' ? 'Réduction immédiate sur tous nos produits d\'huile d\'olive premium' : 
+                               currentLanguage === 'en' ? 'Immediate discount on all our premium olive oil products' : 
+                               'خصم فوري على جميع منتجات زيت الزيتون الممتاز' }}
+                        </p>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-icon">
+                            <i class="fas fa-shipping-fast"></i>
+                        </div>
+                        <h3>{{ currentLanguage === 'fr' ? 'Livraison Gratuite' : 
+                               currentLanguage === 'en' ? 'Free Shipping' : 
+                               'توصيل مجاني' }}</h3>
+                        <p><i class="fas fa-check-circle"></i> 
+                            {{ currentLanguage === 'fr' ? 'Expédition offerte pour toute commande supérieure à 50€' : 
+                               currentLanguage === 'en' ? 'Free shipping for any order over €50' : 
+                               'شحن مجاني لأي طلب يزيد عن 50 يورو' }}
+                        </p>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-icon">
+                            <i class="fas fa-gift"></i>
+                        </div>
+                        <h3>{{ currentLanguage === 'fr' ? 'Cadeau Surprise' : 
+                               currentLanguage === 'en' ? 'Surprise Gift' : 
+                               'هدية مفاجئة' }}</h3>
+                        <p><i class="fas fa-check-circle"></i> 
+                            {{ currentLanguage === 'fr' ? 'Un produit offert pour toute commande pendant la période promotionnelle' : 
+                               currentLanguage === 'en' ? 'A free product with every order during the promotional period' : 
+                               'منتج مجاني مع كل طلب خلال الفترة الترويجية' }}
+                        </p>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3>{{ currentLanguage === 'fr' ? 'Offre Limitée' : 
+                               currentLanguage === 'en' ? 'Limited Offer' : 
+                               'عرض محدود' }}</h3>
+                        <p><i class="fas fa-check-circle"></i> 
+                            {{ currentLanguage === 'fr' ? 'Profitez de cette opportunité jusqu\'à la fin du mois' : 
+                               currentLanguage === 'en' ? 'Take advantage of this opportunity until the end of the month' : 
+                               'استفد من هذه الفرصة حتى نهاية الشهر' }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Remise Spéciale -->
+        <section class="discount-section">
+            <div class="container">
+                <div class="discount-banner">
+                    <div class="discount-content">
+                        <div class="discount-image">
+                            <img src="https://i.pinimg.com/1200x/8b/d7/aa/8bd7aac90b2b14e6fced45b36acdbf87.jpg" 
+                                 alt="Remise spéciale" class="discount-img">
+                        </div>
+                        <div class="discount-text">
+                            <div class="discount-badge">
+                                <span class="discount-percent">
+                                    <i class="fas fa-percentage"></i>
+                                    -20%
+                                </span>
+                                <span class="discount-label">
+                                    <i class="fas fa-fire"></i>
+                                    {{ currentLanguage === 'fr' ? 'REMISE' : 
+                                       currentLanguage === 'en' ? 'DISCOUNT' : 
+                                       'خصم' }}
+                                </span>
+                            </div>
+                            <h2 class="discount-title">
+                                {{ currentLanguage === 'fr' ? 'Offre Spéciale Limitée' : 
+                                   currentLanguage === 'en' ? 'Limited Special Offer' : 
+                                   'عرض خاص محدود' }}
+                            </h2>
+                            <p class="discount-description">
+                                {{ currentLanguage === 'fr' ? 'Profitez de notre promotion exceptionnelle sur tous nos produits d\'huile d\'olive premium. Une occasion unique de découvrir l\'excellence de nos saveurs méditerranéennes à prix réduit.' : 
+                                   currentLanguage === 'en' ? 'Enjoy our exceptional promotion on all our premium olive oil products. A unique opportunity to discover the excellence of our Mediterranean flavors at a reduced price.' : 
+                                   'استمتع بترقيتنا الاستثنائية على جميع منتجات زيت الزيتون الممتاز. فرصة فريدة لاكتشاف تميز نكهاتنا المتوسطية بسعر مخفض.' }}
+                            </p>
+                            <div class="discount-features">
+                                <div class="discount-feature">
+                                    <i class="fas fa-calendar-check"></i>
+                                    <span>
+                                        {{ currentLanguage === 'fr' ? 'Valable jusqu\'au 31 Décembre' : 
+                                           currentLanguage === 'en' ? 'Valid until December 31st' : 
+                                           'صالحة حتى 31 ديسمبر' }}
+                                    </span>
+                                </div>
+                                <div class="discount-feature">
+                                    <i class="fas fa-boxes"></i>
+                                    <span>
+                                        {{ currentLanguage === 'fr' ? 'Sur tous les produits' : 
+                                           currentLanguage === 'en' ? 'On all products' : 
+                                           'على جميع المنتجات' }}
+                                    </span>
+                                </div>
+                                <div class="discount-feature">
+                                    <i class="fas fa-shipping-fast"></i>
+                                    <span>
+                                        {{ currentLanguage === 'fr' ? 'Livraison gratuite incluse' : 
+                                           currentLanguage === 'en' ? 'Free shipping included' : 
+                                           'يشمل التوصيل المجاني' }}
+                                    </span>
+                                </div>
+                            </div>
+                            <button class="discount-btn" (click)="scrollToSection('produits')">
+                                <i class="fas fa-bolt"></i>
+                                {{ currentLanguage === 'fr' ? 'Profiter de l\'offre' : 
+                                   currentLanguage === 'en' ? 'Take advantage of the offer' : 
+                                   'استفد من العرض' }}
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Témoignages -->
+        <section class="testimonials-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">{{ translate('testimonialsTitle') }}</h2>
+                    <p class="section-description">
+                        {{ translate('testimonialsDesc') }}
+                    </p>
+                </div>
+                <div class="testimonials-grid">
+                    <div *ngFor="let testimonial of testimonials" class="testimonial-card">
+                        <div class="testimonial-header">
+                            <div class="client-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="client-info">
+                                <h4>{{ testimonial.name }}</h4>
+                                <span class="testimonial-date">
+                                    <i class="far fa-calendar"></i>
+                                    {{ testimonial.date }}
+                                </span>
+                            </div>
+                            <div class="rating">
+                                <span *ngFor="let star of generateStars(testimonial.rating)" class="star">
+                                    <i class="fas fa-star" [class.filled]="star"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <p class="testimonial-comment">
+                            <i class="fas fa-quote-left"></i>
+                            {{ testimonial.comment }}
+                            <i class="fas fa-quote-right"></i>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Newsletter -->
+        <section class="newsletter-section">
+            <div class="container">
+                <div class="newsletter-content">
+                    <h2 class="newsletter-title">{{ translate('newsletterTitle') }}</h2>
+                    <p class="newsletter-description">
+                        {{ translate('newsletterDesc') }}
+                    </p>
+                    <form [formGroup]="newsletterForm" (ngSubmit)="onSubmitNewsletter()" class="newsletter-form">
+                        <div class="newsletter-input-container">
+                            <i class="fas fa-envelope newsletter-icon"></i>
+                            <input type="email" 
+                                   formControlName="email" 
+                                   [placeholder]="translate('search')" 
+                                   class="newsletter-input">
+                        </div>
+                        <button type="submit" class="newsletter-btn" [disabled]="!newsletterForm.valid">
+                            <i class="fas fa-paper-plane"></i>
+                            {{ translate('subscribe') }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer id="contact" class="site-footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-section">
+                        <img src="https://tse3.mm.bing.net/th/id/OIP.saQdJk7UUWGCqWIRk9NOAAHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" 
+                             alt="Logo" class="footer-logo">
+                        <h3>Byomas</h3>
+                        <p>
+                            <i class="fas fa-seedling"></i>
+                            {{ currentLanguage === 'fr' ? 'Créateur d\'essences naturelles depuis 1985. Nous cultivons l\'excellence dans chaque goutte.' : 
+                               currentLanguage === 'en' ? 'Creator of natural essences since 1985. We cultivate excellence in every drop.' : 
+                               'مبتكر العطور الطبيعية منذ 1985. نزرع التميز في كل قطرة.' }}
+                        </p>
+                        <div class="social-links">
+                            <a href="#" class="social-link" title="Facebook">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" class="social-link" title="Instagram">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                            <a href="#" class="social-link" title="Twitter">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#" class="social-link" title="Pinterest">
+                                <i class="fab fa-pinterest"></i>
+                            </a>
+                            <a href="#" class="social-link" title="YouTube">
+                                <i class="fab fa-youtube"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>
+                            <i class="fas fa-box-open"></i>
+                            {{ translate('products') }}
+                        </h4>
+                        <ul>
+                            <li><a (click)="navigateTo('/huile-olive')"><i class="fas fa-wine-bottle"></i> 
+                                {{ currentLanguage === 'fr' ? 'Huiles d\'Olive' : 
+                                   currentLanguage === 'en' ? 'Olive Oils' : 
+                                   'زيوت الزيتون' }}</a></li>
+                            <li><a (click)="navigateTo('/savon')"><i class="fas fa-soap"></i> 
+                                {{ currentLanguage === 'fr' ? 'Savons Naturels' : 
+                                   currentLanguage === 'en' ? 'Natural Soaps' : 
+                                   'صابون طبيعي' }}</a></li>
+                            <li><a (click)="navigateTo('/huiles-essentielles')"><i class="fas fa-flask"></i> 
+                                {{ currentLanguage === 'fr' ? 'Huiles Essentielles' : 
+                                   currentLanguage === 'en' ? 'Essential Oils' : 
+                                   'الزيوت الأساسية' }}</a></li>
+                            <li><a (click)="navigateTo('/soins')"><i class="fas fa-spa"></i> 
+                                {{ currentLanguage === 'fr' ? 'Soins Naturels' : 
+                                   currentLanguage === 'en' ? 'Natural Care' : 
+                                   'العناية الطبيعية' }}</a></li>
+                            <li><a href="#"><i class="fas fa-gift"></i> 
+                                {{ currentLanguage === 'fr' ? 'Packs Cadeaux' : 
+                                   currentLanguage === 'en' ? 'Gift Packs' : 
+                                   'باقات هدايا' }}</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>
+                            <i class="fas fa-address-book"></i>
+                            {{ translate('contact') }}
+                        </h4>
+                        <p><i class="fas fa-map-marker-alt"></i> {{ translate('address') }}</p>
+                        <p><i class="fas fa-phone"></i> {{ translate('phone') }}</p>
+                        <p><i class="fas fa-envelope"></i> {{ translate('email') }}</p>
+                        <p><i class="fas fa-clock"></i> {{ translate('hours') }}</p>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4>
+                            <i class="fas fa-shield-alt"></i>
+                            {{ currentLanguage === 'fr' ? 'Paiements Sécurisés' : 
+                               currentLanguage === 'en' ? 'Secure Payments' : 
+                               'مدفوعات آمنة' }}
+                        </h4>
+                        <div class="payment-methods">
+                            <i class="fab fa-cc-visa"></i>
+                            <i class="fab fa-cc-mastercard"></i>
+                            <i class="fab fa-cc-paypal"></i>
+                            <i class="fab fa-cc-apple-pay"></i>
+                        </div>
+                        
+                        <div class="newsletter-mini">
+                            <h5>
+                                <i class="fas fa-newspaper"></i>
+                                Newsletter
+                            </h5>
+                            <div class="mini-form">
+                                <input type="email" [placeholder]="currentLanguage === 'fr' ? 'Votre email' : 
+                                                                   currentLanguage === 'en' ? 'Your email' : 
+                                                                   'بريدك الإلكتروني'">
+                                <button type="submit"><i class="fas fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="footer-bottom">
+                    <p>
+                        <i class="far fa-copyright"></i>
+                        2024 Olive Grove Essences. {{ translate('rights') }}
+                    </p>
+                    <div class="footer-links">
+                        <a href="#">
+                            <i class="fas fa-balance-scale"></i>
+                            {{ translate('legal') }}
+                        </a>
+                        <a href="#">
+                            <i class="fas fa-user-shield"></i>
+                            {{ translate('privacy') }}
+                        </a>
+                        <a href="#">
+                            <i class="fas fa-file-contract"></i>
+                            {{ translate('terms') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal Panier -->
+    <div class="modal-overlay" [class.active]="cartVisible" (click)="closeModal($event)">
+        <div class="modal-content cart-modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-shopping-bag"></i>
+                    {{ translate('cart') }}
+                </h3>
+                <button class="close-modal" (click)="toggleCart()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div *ngIf="cart.length === 0" class="empty-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>{{ translate('emptyCart') }}</p>
+                    <button class="continue-shopping" (click)="toggleCart()">
+                        <i class="fas fa-shopping-basket"></i>
+                        {{ translate('continueShopping') }}
+                    </button>
+                </div>
+                
+                <div *ngFor="let item of cart" class="cart-item">
+                    <img [src]="item.image" [alt]="item.name" class="cart-item-image">
+                    <div class="cart-item-info">
+                        <h4>{{ item.name }}</h4>
+                        <p>
+                            <i class="fas fa-tag"></i>
+                            {{ formatPrice(item.price) }}
+                        </p>
+                    </div>
+                    <div class="cart-item-actions">
+                        <button class="quantity-btn" (click)="updateQuantity(item.id, -1)">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span class="quantity">{{ item.quantity }}</span>
+                        <button class="quantity-btn" (click)="updateQuantity(item.id, 1)">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="remove-btn" (click)="removeFromCart(item.id)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div *ngIf="cart.length > 0" class="modal-footer">
+                <div class="cart-summary">
+                    <div class="summary-row">
+                        <span>
+                            <i class="fas fa-receipt"></i>
+                            {{ translate('subtotal') }}:
+                        </span>
+                        <span>{{ formatPrice(cartTotal) }}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>
+                            <i class="fas fa-truck"></i>
+                            {{ translate('shipping') }}:
+                        </span>
+                        <span>{{ currentLanguage === 'fr' ? 'Gratuite' : 
+                                  currentLanguage === 'en' ? 'Free' : 
+                                  'مجاني' }}</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>
+                            <i class="fas fa-calculator"></i>
+                            {{ translate('total') }}:
+                        </span>
+                        <span>{{ formatPrice(cartTotal) }}</span>
+                    </div>
+                </div>
+                <button class="checkout-btn" (click)="checkout()">
+                    <i class="fas fa-credit-card"></i>
+                    {{ translate('checkout') }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Commande -->
+    <div class="modal-overlay" [class.active]="showCheckoutSection" (click)="closeModal($event)">
+        <div class="modal-content checkout-modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    {{ translate('checkout') }}
+                </h3>
+                <button class="close-modal" (click)="showCheckoutSection = false">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <form [formGroup]="orderForm" class="checkout-form">
+                    <div class="form-section">
+                        <h4><i class="fas fa-user"></i> {{ translate('shippingInfo') }}</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-user"></i>
+                                    {{ translate('firstName') }} *
+                                </label>
+                                <input type="text" formControlName="firstName">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-user"></i>
+                                    {{ translate('lastName') }} *
+                                </label>
+                                <input type="text" formControlName="lastName">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-phone"></i>
+                                    {{ translate('phone') }} *
+                                </label>
+                                <input type="tel" formControlName="phone">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-envelope"></i>
+                                    {{ translate('email') }}
+                                </label>
+                                <input type="email" formControlName="email">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4><i class="fas fa-truck"></i> {{ currentLanguage === 'fr' ? 'Adresse de Livraison' : 
+                                                           currentLanguage === 'en' ? 'Delivery Address' : 
+                                                           'عنوان التوصيل' }}</h4>
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label>
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    {{ translate('address') }} *
+                                </label>
+                                <input type="text" formControlName="address">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-map"></i>
+                                    {{ translate('governorate') }} *
+                                </label>
+                                <select formControlName="governorate">
+                                    <option value="">{{ currentLanguage === 'fr' ? 'Sélectionnez' : 
+                                                       currentLanguage === 'en' ? 'Select' : 
+                                                       'اختر' }}</option>
+                                    <option *ngFor="let gov of governorates" [value]="gov">{{ gov }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <i class="fas fa-city"></i>
+                                    {{ translate('city') }} *
+                                </label>
+                                <input type="text" formControlName="city">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4><i class="fas fa-receipt"></i> {{ translate('orderSummary') }}</h4>
+                        <div class="order-summary">
+                            <div *ngFor="let item of cart" class="order-item">
+                                <span>
+                                    <i class="fas fa-shopping-bag"></i>
+                                    {{ item.name }} x {{ item.quantity }}
+                                </span>
+                                <span>{{ formatPrice(item.price * item.quantity) }}</span>
+                            </div>
+                            <div class="summary-total">
+                                <span>
+                                    <i class="fas fa-calculator"></i>
+                                    {{ translate('total') }}: {{ formatPrice(cartTotal) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="submit-order-btn" 
+                            (click)="submitOrder()" 
+                            [disabled]="isSubmittingOrder">
+                        <i class="fas fa-check-circle" *ngIf="!isSubmittingOrder"></i>
+                        <i class="fas fa-spinner fa-spin" *ngIf="isSubmittingOrder"></i>
+                        {{ isSubmittingOrder ? translate('processingOrder') : 
+                           currentLanguage === 'fr' ? 'Confirmer la Commande - ' + formatPrice(cartTotal) : 
+                           currentLanguage === 'en' ? 'Confirm Order - ' + formatPrice(cartTotal) : 
+                           'تأكيد الطلب - ' + formatPrice(cartTotal) }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
