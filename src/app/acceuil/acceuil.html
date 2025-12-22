@@ -569,129 +569,86 @@
         </section>
 
         <!-- Footer -->
-        <footer id="contact" class="site-footer">
-            <div class="container">
-                <div class="footer-content">
-                    <div class="footer-section">
-                        <img src="https://tse3.mm.bing.net/th/id/OIP.saQdJk7UUWGCqWIRk9NOAAHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" 
-                             alt="Logo" class="footer-logo">
-                        <h3>Byomas</h3>
-                        <p>
-                            <i class="fas fa-seedling"></i>
-                            {{ currentLanguage === 'fr' ? 'Créateur d\'essences naturelles depuis 1985. Nous cultivons l\'excellence dans chaque goutte.' : 
-                               currentLanguage === 'en' ? 'Creator of natural essences since 1985. We cultivate excellence in every drop.' : 
-                               'مبتكر العطور الطبيعية منذ 1985. نزرع التميز في كل قطرة.' }}
-                        </p>
-                        <div class="social-links">
-                            <a href="#" class="social-link" title="Facebook">
-                                <i class="fab fa-facebook-f"></i>
-                            </a>
-                            <a href="#" class="social-link" title="Instagram">
-                                <i class="fab fa-instagram"></i>
-                            </a>
-                            <a href="#" class="social-link" title="Twitter">
-                                <i class="fab fa-twitter"></i>
-                            </a>
-                            <a href="#" class="social-link" title="Pinterest">
-                                <i class="fab fa-pinterest"></i>
-                            </a>
-                            <a href="#" class="social-link" title="YouTube">
-                                <i class="fab fa-youtube"></i>
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div class="footer-section">
-                        <h4>
-                            <i class="fas fa-box-open"></i>
-                            {{ translate('products') }}
-                        </h4>
-                        <ul>
-                            <li><a (click)="navigateTo('/huile-olive')"><i class="fas fa-wine-bottle"></i> 
-                                {{ currentLanguage === 'fr' ? 'Huiles d\'Olive' : 
-                                   currentLanguage === 'en' ? 'Olive Oils' : 
-                                   'زيوت الزيتون' }}</a></li>
-                            <li><a (click)="navigateTo('/savon')"><i class="fas fa-soap"></i> 
-                                {{ currentLanguage === 'fr' ? 'Savons Naturels' : 
-                                   currentLanguage === 'en' ? 'Natural Soaps' : 
-                                   'صابون طبيعي' }}</a></li>
-                            <li><a (click)="navigateTo('/huiles-essentielles')"><i class="fas fa-flask"></i> 
-                                {{ currentLanguage === 'fr' ? 'Huiles Essentielles' : 
-                                   currentLanguage === 'en' ? 'Essential Oils' : 
-                                   'الزيوت الأساسية' }}</a></li>
-                            <li><a (click)="navigateTo('/soins')"><i class="fas fa-spa"></i> 
-                                {{ currentLanguage === 'fr' ? 'Soins Naturels' : 
-                                   currentLanguage === 'en' ? 'Natural Care' : 
-                                   'العناية الطبيعية' }}</a></li>
-                            <li><a href="#"><i class="fas fa-gift"></i> 
-                                {{ currentLanguage === 'fr' ? 'Packs Cadeaux' : 
-                                   currentLanguage === 'en' ? 'Gift Packs' : 
-                                   'باقات هدايا' }}</a></li>
-                        </ul>
-                    </div>
-                    
-                    <div class="footer-section">
-                        <h4>
-                            <i class="fas fa-address-book"></i>
-                            {{ translate('contact') }}
-                        </h4>
-                        <p><i class="fas fa-map-marker-alt"></i> {{ translate('address') }}</p>
-                        <p><i class="fas fa-phone"></i> {{ translate('phone') }}</p>
-                        <p><i class="fas fa-envelope"></i> {{ translate('email') }}</p>
-                        <p><i class="fas fa-clock"></i> {{ translate('hours') }}</p>
-                    </div>
-
-                    <div class="footer-section">
-                        <h4>
-                            <i class="fas fa-shield-alt"></i>
-                            {{ currentLanguage === 'fr' ? 'Paiements Sécurisés' : 
-                               currentLanguage === 'en' ? 'Secure Payments' : 
-                               'مدفوعات آمنة' }}
-                        </h4>
-                        <div class="payment-methods">
-                            <i class="fab fa-cc-visa"></i>
-                            <i class="fab fa-cc-mastercard"></i>
-                            <i class="fab fa-cc-paypal"></i>
-                            <i class="fab fa-cc-apple-pay"></i>
-                        </div>
-                        
-                        <div class="newsletter-mini">
-                            <h5>
-                                <i class="fas fa-newspaper"></i>
-                                Newsletter
-                            </h5>
-                            <div class="mini-form">
-                                <input type="email" [placeholder]="currentLanguage === 'fr' ? 'Votre email' : 
-                                                                   currentLanguage === 'en' ? 'Your email' : 
-                                                                   'بريدك الإلكتروني'">
-                                <button type="submit"><i class="fas fa-paper-plane"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="footer-bottom">
-                    <p>
-                        <i class="far fa-copyright"></i>
-                        2024 Olive Grove Essences. {{ translate('rights') }}
-                    </p>
-                    <div class="footer-links">
-                        <a href="#">
-                            <i class="fas fa-balance-scale"></i>
-                            {{ translate('legal') }}
-                        </a>
-                        <a href="#">
-                            <i class="fas fa-user-shield"></i>
-                            {{ translate('privacy') }}
-                        </a>
-                        <a href="#">
-                            <i class="fas fa-file-contract"></i>
-                            {{ translate('terms') }}
-                        </a>
-                    </div>
+       <!-- Footer -->
+<footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-content">
+            <!-- Section 1: Présentation de la marque -->
+            <div class="footer-section">
+                <h3 class="footer-brand">
+                    BIPUNICA<br>
+                    <span class="footer-subtitle">Huiles d'Olive</span>
+                </h3>
+                <p class="footer-description">
+                    Depuis 3 générations, nous produisons des huiles d'olive d'exception avec passion et respect pour la nature, en sélectionnant les meilleures olives de Tunisie.
+                </p>
+                <div class="social-links">
+                    <a href="https://instagram.com" class="social-link" target="_blank" title="Instagram">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="https://pinterest.com" class="social-link" target="_blank" title="Pinterest">
+                        <i class="fab fa-pinterest"></i>
+                    </a>
+                    <a href="https://facebook.com" class="social-link" target="_blank" title="Facebook">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
                 </div>
             </div>
-        </footer>
+            
+            <!-- Section 2: Nos Collections -->
+            <div class="footer-section">
+                <h4>Nos Collections</h4>
+                <ul class="footer-links">
+                    <li><a href="#produits">Huile Extra Vierge</a></li>
+                    <li><a href="#produits">Huile Vierge</a></li>
+                    <li><a href="#produits">Huile Pure/Raffinée</a></li>
+                    <li><a href="#produits">Huiles Aromatisées</a></li>
+                    <li><a href="javascript:void(0)" (click)="navigateTo('/savon')">Savons Naturels</a></li>
+                </ul>
+            </div>
+            
+            <!-- Section 3: Informations -->
+            <div class="footer-section">
+                <h4>Informations</h4>
+                <ul class="footer-links">
+                    <li><a href="javascript:void(0)" (click)="navigateTo('/notre-histoire')">Notre Histoire</a></li>
+                    <li><a href="#about">Engagements</a></li>
+                    <li><a href="#contact">Livraison & Retours</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                    <li><a href="javascript:void(0)">FAQ</a></li>
+                </ul>
+            </div>
+            
+            <!-- Section 4: Contact & Support -->
+            <div class="footer-section">
+                <h4>Contact & Support</h4>
+                <ul class="footer-contact">
+                    <li><i class="fas fa-phone"></i> +216 12 34 56 78</li>
+                    <li><i class="fas fa-envelope"></i> contact@bipunica.tn</li>
+                    <li><i class="fas fa-map-marker-alt"></i> Sfax, Tunisie</li>
+                    <li><i class="fas fa-clock"></i> Lun-Ven: 9h-18h</li>
+                </ul>
+                <div class="payment-methods">
+                    <i class="fab fa-cc-visa"></i>
+                    <i class="fab fa-cc-mastercard"></i>
+                    <i class="fab fa-cc-paypal"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <div class="footer-copyright">
+                <p>&copy; 2024 BIPUNICA Huiles d'Olive. Tous droits réservés.</p>
+            </div>
+            <div class="footer-legal">
+                <a href="javascript:void(0)">Mentions légales</a>
+                <span class="separator">|</span>
+                <a href="javascript:void(0)">Politique de confidentialité</a>
+            </div>
+        </div>
+    </div>
+</footer>
     </div>
 
     <!-- Modal Panier -->
