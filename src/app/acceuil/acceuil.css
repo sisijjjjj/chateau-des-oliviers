@@ -4858,3 +4858,280 @@ body.modal-open {
         justify-content: center;
     }
 }
+/* Footer BIPUNICA - Exactement comme ta description */
+.site-footer {
+    background: linear-gradient(135deg, #8B4513 0%, #556B2F 100%);
+    color: #e8dfca;
+    padding: 60px 0 30px;
+    font-family: 'Georgia', serif;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Effet texture subtile */
+.site-footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23e8dfca' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+    opacity: 0.1;
+    z-index: 0;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+}
+
+@media (max-width: 992px) {
+    .footer-content {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+}
+
+/* Section Brand */
+.brand-section {
+    padding-right: 30px;
+}
+
+.footer-brand {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #e8dfca;
+    line-height: 1.1;
+    margin-bottom: 15px;
+    font-family: 'Playfair Display', serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.brand-subtitle {
+    display: block;
+    font-size: 1.2rem;
+    color: #D4AF37;
+    font-weight: 400;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+.footer-description {
+    color: #c0a878;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    font-size: 0.95rem;
+    padding-right: 20px;
+}
+
+/* Social Links */
+.social-links {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(232, 223, 202, 0.1);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    color: #e8dfca;
+    text-decoration: none;
+    border: 1px solid rgba(232, 223, 202, 0.2);
+    font-size: 1rem;
+}
+
+.social-link:hover {
+    background: rgba(212, 175, 55, 0.2);
+    color: #fff;
+    transform: translateY(-3px);
+    border-color: #D4AF37;
+    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
+}
+
+/* Section Titles */
+.footer-title {
+    color: #e8dfca;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(232, 223, 202, 0.2);
+    position: relative;
+}
+
+.footer-title::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background: #D4AF37;
+}
+
+/* Links */
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: 12px;
+}
+
+.footer-links a {
+    color: #c0a878;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    display: inline-block;
+    padding: 2px 0;
+    position: relative;
+}
+
+.footer-links a:hover {
+    color: #e8dfca;
+    transform: translateX(5px);
+}
+
+.footer-links a::before {
+    content: '›';
+    color: #D4AF37;
+    margin-right: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.footer-links a:hover::before {
+    opacity: 1;
+}
+
+/* Contact Info */
+.contact-info {
+    margin-bottom: 25px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+    color: #c0a878;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.contact-item i {
+    color: #D4AF37;
+    font-size: 1rem;
+    width: 16px;
+    text-align: center;
+    margin-top: 2px;
+}
+
+/* Payment Methods */
+.payment-methods {
+    display: flex;
+    gap: 15px;
+    font-size: 1.8rem;
+    margin-top: 20px;
+    color: #c0a878;
+}
+
+.payment-methods i {
+    transition: all 0.3s ease;
+    background: rgba(232, 223, 202, 0.1);
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.payment-methods i:hover {
+    color: #fff;
+    background: rgba(212, 175, 55, 0.3);
+    transform: translateY(-3px);
+}
+
+/* Footer Bottom */
+.footer-bottom {
+    border-top: 1px solid rgba(232, 223, 202, 0.2);
+    padding-top: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.footer-copyright p {
+    color: #c0a878;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.footer-legal {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.footer-legal a {
+    color: #c0a878;
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color 0.3s ease;
+}
+
+.footer-legal a:hover {
+    color: #e8dfca;
+}
+
+.separator {
+    color: rgba(232, 223, 202, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .footer-legal {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .site-footer {
+        padding: 40px 0 20px;
+    }
+    
+    .footer-brand {
+        font-size: 2rem;
+    }
+}
