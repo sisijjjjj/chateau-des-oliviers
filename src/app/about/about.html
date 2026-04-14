@@ -27,113 +27,167 @@
 
     <div class="relative flex min-h-screen w-full flex-col overflow-x-hidden" id="mainContainer">
         <!-- Header -->
-        <header class="site-header">
-            <div class="header-container">
-                <div class="logo">
-                    <img src="https://tse3.mm.bing.net/th/id/OIP.saQdJk7UUWGCqWIRk9NOAAHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" 
-                         alt="Olive Grove Essences" class="logo-img">
-                </div>
+   <!-- Header avec navbar beige clair comme le footer -->
+<header class="site-header">
+    <div class="header-container">
+        <!-- Logo -->
+        <div class="logo">
+            <img src="https://tse3.mm.bing.net/th/id/OIP.saQdJk7UUWGCqWIRk9NOAAHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" 
+                 alt="Olive Grove Essences" 
+                 class="logo-img">
+        </div>
 
-                <nav class="main-nav">
-                    <ul>
-                        <li><a (click)="navigateTo('/')" class="nav-link" id="homeLink">Accueil</a></li>
-                        <li class="nav-dropdown">
-                            <a href="javascript:void(0)" class="nav-link dropdown-toggle" id="productsLink">
-                                Produits <i class="fas fa-chevron-down"></i>
-                            </a>
-                            <div class="dropdown-menu">
-                                <a (click)="navigateTo('/huile-olive')" class="dropdown-item" id="oilLink">
-                                    <i class="fas fa-wine-bottle"></i>
-                                    Huiles d'Olive
-                                </a>
-                                <a (click)="navigateTo('/savon')" class="dropdown-item" id="soapLink">
-                                    <i class="fas fa-soap"></i>
-                                    Savons Naturels
-                                </a>
-                                <a (click)="navigateTo('/huiles-essentielles')" class="dropdown-item" id="essentialsLink">
-                                    <i class="fas fa-flask"></i>
-                                    Huiles Essentielles
-                                </a>
-                            </div>
-                        </li>
-                        <li><a (click)="navigateTo('/about')" class="nav-link active" id="aboutLink">À Propos</a></li>
-                        <li><a href="#contact" class="nav-link" id="contactLink">Contact</a></li>
-                    </ul>
-                </nav>
-
-                <div class="header-actions">
-                    <button class="theme-toggle" id="themeToggle" aria-label="Basculer le mode sombre">
-                        <i class="fas fa-moon"></i>
-                    </button>
-
-                    <div class="language-selector">
-                        <select class="lang-select" id="languageSelect">
-                            <option value="fr">FR</option>
-                            <option value="en">EN</option>
-                            <option value="ar">AR</option>
-                        </select>
+        <!-- Navigation Desktop -->
+        <nav class="main-nav">
+            <ul>
+                <li><a (click)="navigateTo('/')" class="nav-link active">{{ translate('home') }}</a></li>
+                <li class="nav-dropdown">
+                    <a href="javascript:void(0)" class="nav-link">
+                        {{ translate('products') }}
+                    </a>
+                    <div class="dropdown-menu">
+                        <a (click)="navigateTo('/huile-olive')" class="dropdown-item">
+                            <i class="fas fa-wine-bottle"></i>
+                            {{ currentLanguage === 'fr' ? 'Huiles d\'Olive' : 
+                               currentLanguage === 'en' ? 'Olive Oils' : 
+                               'زيوت الزيتون' }}
+                        </a>
+                        <a (click)="navigateTo('/savon')" class="dropdown-item">
+                            <i class="fas fa-soap"></i>
+                            {{ currentLanguage === 'fr' ? 'Savons Naturels' : 
+                               currentLanguage === 'en' ? 'Natural Soaps' : 
+                               'صابون طبيعي' }}
+                        </a>
+                        <a (click)="navigateTo('/huiles-essentielles')" class="dropdown-item">
+                            <i class="fas fa-flask"></i>
+                            {{ currentLanguage === 'fr' ? 'Huiles Essentielles' : 
+                               currentLanguage === 'en' ? 'Essential Oils' : 
+                               'الزيوت الأساسية' }}
+                        </a>
+                        <a (click)="navigateTo('/soin')" class="dropdown-item">
+                            <i class="fas fa-spa"></i>
+                            {{ currentLanguage === 'fr' ? 'Soins Naturels' : 
+                               currentLanguage === 'en' ? 'Natural Care' : 
+                               'العناية الطبيعية' }}
+                        </a>
                     </div>
+                </li>
+                <li><a (click)="navigateTo('/about')" class="nav-link">{{ translate('about') }}</a></li>
+                <li><a (click)="navigateTo('/notre-histoire')" class="nav-link">
+                    {{ currentLanguage === 'fr' ? 'Notre histoire' : 
+                       currentLanguage === 'en' ? 'Our Story' : 
+                       'قصتنا' }}
+                </a></li>
+                <li><a href="#contact" class="nav-link">{{ translate('contact') }}</a></li>
+            </ul>
+        </nav>
 
-                    <div class="action-buttons">
-                        <button class="action-btn" id="userBtn">
-                            <i class="fas fa-user"></i>
-                        </button>
-                        <button class="action-btn cart-icon" id="cartBtn">
-                            <i class="fas fa-shopping-bag"></i>
-                            <span class="cart-count" id="cartCount">0</span>
-                        </button>
-                    </div>
+        <!-- Actions Header -->
+        <div class="header-actions">
+            <!-- Icône langue seulement -->
+            <div class="language-icon" (click)="toggleLanguageMenu()">
+                <i class="fas fa-globe"></i>
+            </div>
+            
+            <!-- Menu langue dropdown -->
+            <div class="language-dropdown" *ngIf="showLanguageMenu">
+                <button (click)="changeLanguage('fr')">FR</button>
+                <button (click)="changeLanguage('en')">EN</button>
+                <button (click)="changeLanguage('ar')">AR</button>
+            </div>
 
-                    <button class="mobile-menu-btn" id="mobileMenuBtn">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                </div>
+            <div class="search-container">
+                <input type="text" class="search-input" [placeholder]="translate('search')">
+                <button class="search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="action-btn">
+                    <i class="fas fa-user"></i>
+                </button>
+                <button class="action-btn cart-icon" (click)="toggleCart()">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="cart-count" *ngIf="cartItemCount > 0">{{ cartItemCount }}</span>
+                </button>
             </div>
 
             <!-- Menu Mobile -->
-            <div class="mobile-nav" id="mobileNav">
-                <div class="mobile-nav-header">
-                    <span class="mobile-nav-title" id="mobileNavTitle">Menu</span>
-                    <button class="mobile-close-btn" id="mobileCloseBtn">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <nav class="mobile-nav-content">
-                    <a (click)="navigateTo('/')" class="mobile-nav-link" id="mobileHomeLink">Accueil</a>
-                    
-                    <div class="mobile-submenu">
-                        <a href="javascript:void(0)" class="mobile-nav-link submenu-toggle" id="mobileProductsLink">
-                            Produits <i class="fas fa-chevron-down"></i>
-                        </a>
-                        <div class="mobile-submenu-items" id="mobileSubmenu">
-                            <a (click)="navigateTo('/huile-olive')" class="mobile-submenu-link" id="mobileOilLink">
-                                <i class="fas fa-wine-bottle"></i>
-                                Huiles d'Olive
-                            </a>
-                            <a (click)="navigateTo('/savon')" class="mobile-submenu-link" id="mobileSoapLink">
-                                <i class="fas fa-soap"></i>
-                                Savons Naturels
-                            </a>
-                            <a (click)="navigateTo('/huiles-essentielles')" class="mobile-submenu-link" id="mobileEssentialsLink">
-                                <i class="fas fa-flask"></i>
-                                Huiles Essentielles
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <a (click)="navigateTo('/about')" class="mobile-nav-link active" id="mobileAboutLink">À Propos</a>
-                    <a href="#contact" class="mobile-nav-link" id="mobileContactLink">Contact</a>
-                    
-                    <div class="mobile-language-selector">
-                        <button class="lang-btn active" data-lang="fr">FR</button>
-                        <button class="lang-btn" data-lang="en">EN</button>
-                        <button class="lang-btn" data-lang="ar">AR</button>
-                    </div>
-                </nav>
-            </div>
+            <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </div>
 
-            <div class="nav-overlay" id="navOverlay"></div>
-        </header>
+    <!-- Menu Mobile -->
+    <div class="mobile-nav" [class.active]="mobileMenuOpen">
+        <div class="mobile-nav-header">
+            <span class="mobile-nav-title">
+                {{ currentLanguage === 'fr' ? 'Menu' : 
+                   currentLanguage === 'en' ? 'Menu' : 
+                   'القائمة' }}
+            </span>
+            <button class="mobile-close-btn" (click)="closeMobileMenu()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav class="mobile-nav-content">
+            <a (click)="navigateTo('/')" class="mobile-nav-link">{{ translate('home') }}</a>
+            
+            <!-- Produits avec sous-menu mobile -->
+            <div class="mobile-submenu">
+                <a href="javascript:void(0)" class="mobile-nav-link submenu-toggle" (click)="toggleMobileSubmenu()">
+                    {{ translate('products') }} <i class="fas fa-chevron-down"></i>
+                </a>
+                <div class="mobile-submenu-items" [class.active]="mobileSubmenuOpen">
+                    <a (click)="navigateTo('/huile-olive')" class="mobile-submenu-link">
+                        <i class="fas fa-wine-bottle"></i>
+                        {{ currentLanguage === 'fr' ? 'Huiles d\'Olive' : 
+                           currentLanguage === 'en' ? 'Olive Oils' : 
+                           'زيوت الزيتون' }}
+                    </a>
+                    <a (click)="navigateTo('/savon')" class="mobile-submenu-link">
+                        <i class="fas fa-soap"></i>
+                        {{ currentLanguage === 'fr' ? 'Savons Naturels' : 
+                           currentLanguage === 'en' ? 'Natural Soaps' : 
+                           'صابون طبيعي' }}
+                    </a>
+                    <a (click)="navigateTo('/huiles-essentielles')" class="mobile-submenu-link">
+                        <i class="fas fa-flask"></i>
+                        {{ currentLanguage === 'fr' ? 'Huiles Essentielles' : 
+                           currentLanguage === 'en' ? 'Essential Oils' : 
+                           'الزيوت الأساسية' }}
+                    </a>
+                    <a (click)="navigateTo('/soins')" class="mobile-submenu-link">
+                        <i class="fas fa-spa"></i>
+                        {{ currentLanguage === 'fr' ? 'Soins Naturels' : 
+                           currentLanguage === 'en' ? 'Natural Care' : 
+                           'العناية الطبيعية' }}
+                    </a>
+                </div>
+            </div>
+            
+            <a (click)="navigateTo('/about')" class="mobile-nav-link">{{ translate('about') }}</a>
+            <a (click)="navigateTo('/notre-histoire')" class="mobile-nav-link">
+                {{ currentLanguage === 'fr' ? 'Notre histoire' : 
+                   currentLanguage === 'en' ? 'Our Story' : 
+                   'قصتنا' }}
+            </a>
+            <a href="#contact" class="mobile-nav-link" (click)="scrollToSection('contact')">{{ translate('contact') }}</a>
+            
+            <!-- Sélecteur de langue mobile -->
+            <div class="mobile-language-selector">
+                <button class="lang-btn" [class.active]="currentLanguage === 'fr'" (click)="changeLanguage('fr')">FR</button>
+                <button class="lang-btn" [class.active]="currentLanguage === 'en'" (click)="changeLanguage('en')">EN</button>
+                <button class="lang-btn" [class.active]="currentLanguage === 'ar'" (click)="changeLanguage('ar')">AR</button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Overlay Mobile -->
+    <div class="nav-overlay" [class.active]="mobileMenuOpen" (click)="closeMobileMenu()"></div>
+</header>
 
         <!-- Hero Section -->
         <section class="about-hero">
@@ -362,55 +416,72 @@
         </section>
 
         <!-- Footer -->
-        <footer id="contact" class="site-footer">
-            <div class="container">
-                <div class="footer-content">
-                    <div class="footer-section">
-                        <img src="https://tse3.mm.bing.net/th/id/OIP.saQdJk7UUWGCqWIRk9NOAAHaHa?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3" 
-                             alt="Logo" class="footer-logo">
-                        <h3>Olive Grove Essences</h3>
-                        <p>
-                            <i class="fas fa-seedling"></i>
-                            Créateur d'essences naturelles depuis 1985
-                        </p>
-                        <div class="social-links">
-                            <a href="#" class="social-link" title="Facebook">
-                                <i class="fab fa-facebook-f"></i>
-                            </a>
-                            <a href="#" class="social-link" title="Instagram">
-                                <i class="fab fa-instagram"></i>
-                            </a>
-                            <a href="#" class="social-link" title="Twitter">
-                                <i class="fab fa-twitter"></i>
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div class="footer-section">
-                        <h4>Produits</h4>
-                        <ul>
-                            <li><a (click)="navigateTo('/huile-olive')" id="footerOilLink">Huiles d'Olive</a></li>
-                            <li><a (click)="navigateTo('/savon')" id="footerSoapLink">Savons Naturels</a></li>
-                            <li><a (click)="navigateTo('/huiles-essentielles')" id="footerEssentialsLink">Huiles Essentielles</a></li>
-                        </ul>
-                    </div>
-                    
-                    <div class="footer-section">
-                        <h4>Contact</h4>
-                        <p><i class="fas fa-map-marker-alt"></i> <span id="footerAddress">123 Rue de l'Olivier, Tunis 1000</span></p>
-                        <p><i class="fas fa-phone"></i> <span id="footerPhone">+216 12 345 678</span></p>
-                        <p><i class="fas fa-envelope"></i> <span id="footerEmail">contact@olivegrove.tn</span></p>
-                    </div>
-                </div>
+       <footer class="footer">
+    <div class="container">
+        <!-- Structure en 4 colonnes principales -->
+        <div class="footer-columns">
+            <!-- Colonne 1 : Brand, description, réseaux sociaux -->
+            <div class="footer-col brand-col">
+                <h2 class="footer-brand">Byomas</h2>
+                <p class="footer-description">
+                    Depuis 3 générations, nous produisons des huiles d'olive d'exception avec passion et respect pour la nature, en sélectionnant les meilleures olives de Tunisie.
+                </p>
                 
-                <div class="footer-bottom">
-                    <p>
-                        <i class="far fa-copyright"></i>
-                        2024 Olive Grove Essences. <span id="footerRights">Tous droits réservés</span>
-                    </p>
+                <!-- Réseaux sociaux sous le paragraphe -->
+                <div class="social-links">
+                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-pinterest"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
                 </div>
             </div>
-        </footer>
+
+            <!-- Colonne 2 : Nos Collections -->
+            <div class="footer-col">
+                <h3 class="footer-title">Nos Collections</h3>
+                <ul class="footer-list">
+                    <li>Huile Extra Vierge</li>
+                    <li>Huile Vierge</li>
+                    <li>Huile Pure/Raffinée</li>
+                    <li>Huiles Aromatisées</li>
+                    <li>Savons Naturels</li>
+                </ul>
+            </div>
+
+            <!-- Colonne 3 : Informations -->
+            <div class="footer-col">
+                <h3 class="footer-title">Informations</h3>
+                <ul class="footer-list">
+                    <li>Notre Histoire</li>
+                    <li>Engagements</li>
+                    <li>Livraison & Retours</li>
+                    <li>Contact</li>
+                    <li>FAQ</li>
+                </ul>
+            </div>
+
+            <!-- Colonne 4 : Contact & Support avec icônes dorées -->
+            <div class="footer-col">
+                <h3 class="footer-title">Contact & Support</h3>
+                <ul class="footer-list with-icons">
+                    <li><i class="fas fa-phone-alt icon"></i> +216 12 34 56 78</li>
+                    <li><i class="fas fa-envelope icon"></i> contact@bipunica.tn</li>
+                    <li><i class="fas fa-map-marker-alt icon"></i> Sfax, Tunisie</li>
+                    <li><i class="fas fa-clock icon"></i> Lun-Ven: 9h-18h</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section méthodes de paiement et copyright -->
+        <div class="footer-bottom">
+            <div class="payment-methods">
+                <i class="fab fa-cc-visa"></i>
+                <i class="fab fa-cc-mastercard"></i>
+                <i class="fab fa-cc-paypal"></i>
+            </div>
+            <p class="copyright">© 2024 BIPUNICA Huiles d'Olive. Tous droits réservés. | Mentions légales | Politique de confidentialité</p>
+        </div>
+    </div>
+</footer>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>

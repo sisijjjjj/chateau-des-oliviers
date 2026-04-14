@@ -15,6 +15,7 @@ interface Product {
   id: number;
   name: string;
   description: string;
+  detailedDescription?: string;  // Optionnel pour les détails
   price: number;
   originalPrice?: number;
   image: string;
@@ -22,6 +23,11 @@ interface Product {
   features: string[];
   inStock: boolean;
   badge?: string;
+  isBio?: boolean;                // Optionnel
+  ingredients?: string;           // Optionnel
+  size?: string;                  // Optionnel
+  origin?: string;                // Optionnel
+  harvest?: string;               // Optionnel
 }
 
 interface Testimonial {
@@ -55,12 +61,15 @@ export class AcceuilComponent implements OnInit {
   paymentError = '';
   orderError = '';
   showPaymentForm = false;
-  selectedProduct: Product | null = null;
+  selectedProduct: Product | null = null;  // Une seule déclaration
   currentStep = 1;
   mobileMenuOpen = false;
   
   // Sous-menu mobile
   mobileSubmenuOpen = false;
+  
+  // Détails produit
+  productDetailsVisible = false;
   
   currentLanguage: string = 'fr';
   
@@ -77,7 +86,7 @@ export class AcceuilComponent implements OnInit {
   cart: CartItem[] = [];
   orderId = '';
   
-  // Traductions complètes - CORRIGÉ : Toutes les propriétés dupliquées résolues
+  // Traductions
   translations = {
     fr: {
       // Header
@@ -381,41 +390,59 @@ export class AcceuilComponent implements OnInit {
     }
   };
 
-  // Produits
+  // Produits avec toutes les propriétés nécessaires
   featuredProducts: Product[] = [
     {
       id: 1,
       name: 'Huile d\'Olives Vierge Extra',
       description: 'Notre huile d\'olive premium, pressée à froid pour préserver tous ses arômes et bienfaits.',
+      detailedDescription: 'Notre huile d\'olive extra vierge est obtenue par pression à froid d\'olives soigneusement sélectionnées dans nos oliveraies. Elle se caractérise par son fruité intense et ses notes d\'artichaut et d\'amande fraîche. Riche en antioxydants et en acides gras essentiels, elle est idéale pour une consommation crue ou pour des cuissons douces.',
       price: 29.9,
       originalPrice: 35.9,
       image: 'https://i.pinimg.com/736x/75/08/08/750808c0e52d42e1ff0890a85455f4b4.jpg',
       category: 'Huiles',
       features: ['Pressée à froid', '100% Naturelle', 'Certifiée Bio'],
-      inStock: true
+      inStock: true,
+      isBio: true,
+      ingredients: '100% huile d\'olive extra vierge issue de l\'agriculture biologique',
+      size: '500ml',
+      origin: 'Tunisie',
+      harvest: '2023'
     },
     {
       id: 2,
       name: 'Savon Naturel à l\'Huile d\'Olive',
       description: 'Savon artisanal à base d\'huile d\'olive pure, pour une peau douce et hydratée naturellement.',
+      detailedDescription: 'Notre savon naturel est fabriqué selon la méthode traditionnelle de saponification à froid, qui préserve toutes les propriétés nourrissantes de l\'huile d\'olive. Enrichi en huiles essentielles, il nettoie en douceur tout en respectant l\'équilibre de votre peau.',
       price: 12.9,
       originalPrice: 15.9,
       image: 'https://i.pinimg.com/1200x/b0/77/27/b07727db8611737de600b8679f8e479d.jpg',
       category: 'Soins',
       features: ['Artisanal', 'Peau sensible', 'Sans produits chimiques'],
       inStock: true,
-      badge: 'POPULAIRE'
+      badge: 'POPULAIRE',
+      isBio: true,
+      ingredients: 'Huile d\'olive, eau, soude, huiles essentielles de lavande',
+      size: '150g',
+      origin: 'Tunisie',
+      harvest: '2023'
     },
     {
       id: 3,
       name: 'Huiles Essentielles Pures',
       description: 'Collection d\'huiles essentielles 100% pures pour le bien-être et l\'aromathérapie.',
+      detailedDescription: 'Notre huile essentielle d\'olivier est obtenue par distillation complète des feuilles d\'olivier. Réputée pour ses propriétés apaisantes et régénérantes, elle est idéale pour les massages ou en diffusion pour créer une atmosphère de bien-être.',
       price: 24.9,
       image: 'https://tse3.mm.bing.net/th/id/OIP.v_NnwP-_g6633hK1etlLFQHaEo?cb=ucfimg2ucfimg=1&rs=1&pid=ImgDetMain&o=7&rm=3',
       category: 'Essences',
       features: ['100% Pure', 'Thérapeutique', 'Haute concentration'],
-      inStock: true
-    },
+      inStock: true,
+      isBio: true,
+      ingredients: '100% huile essentielle de feuilles d\'olivier',
+      size: '30ml',
+      origin: 'Tunisie',
+      harvest: '2023'
+    }
   ];
 
   // Témoignages
@@ -449,6 +476,9 @@ export class AcceuilComponent implements OnInit {
     'Médenine', 'Monastir', 'Nabeul', 'Sfax', 'Sidi Bouzid', 'Siliana',
     'Sousse', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan'
   ];
+
+  // Propriété pour le menu langue
+  showLanguageMenu = false;
 
   constructor(
     private fb: FormBuilder,
@@ -508,7 +538,13 @@ export class AcceuilComponent implements OnInit {
   changeLanguage(lang: string): void {
     this.currentLanguage = lang;
     localStorage.setItem('preferredLanguage', lang);
-    this.cdr.detectChanges(); // Forcer la mise à jour de la vue
+    this.showLanguageMenu = false;
+    this.cdr.detectChanges();
+  }
+
+  // Toggle menu langue
+  toggleLanguageMenu(): void {
+    this.showLanguageMenu = !this.showLanguageMenu;
   }
 
   // Méthode pour gérer le changement de langue depuis l'événement
@@ -677,6 +713,8 @@ export class AcceuilComponent implements OnInit {
       this.cartVisible = false;
       this.showCheckoutSection = false;
       this.showPaymentForm = false;
+      this.productDetailsVisible = false; // Ajouté
+      document.body.classList.remove('modal-open');
     }
   }
 
@@ -705,6 +743,8 @@ export class AcceuilComponent implements OnInit {
     this.showPaymentForm = false;
     this.mobileMenuOpen = false;
     this.mobileSubmenuOpen = false;
+    this.productDetailsVisible = false; // Ajouté
+    document.body.classList.remove('modal-open');
   }
 
   // Navigation
@@ -731,5 +771,24 @@ export class AcceuilComponent implements OnInit {
     this.showCheckoutSection = false;
     this.orderForm.reset();
     this.orderForm.patchValue({ payOnDelivery: true });
+  }
+
+  // Méthode pour exporter les produits (à implémenter selon vos besoins)
+  exportProductsToAdmin() {
+    console.log('Exporting products to admin...');
+  }
+
+  // Méthode pour afficher les détails d'un produit
+  showProductDetails(product: Product): void {
+    this.selectedProduct = product;
+    this.productDetailsVisible = true;
+    document.body.classList.add('modal-open');
+  }
+
+  // Méthode pour fermer les détails du produit
+  closeProductDetails(): void {
+    this.productDetailsVisible = false;
+    this.selectedProduct = null;
+    document.body.classList.remove('modal-open');
   }
 }

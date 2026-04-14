@@ -10,7 +10,22 @@ import { HttpClient, HttpClientModule, HttpErrorResponse } from '@angular/common
 Chart.register(...registerables);
 
 // ==================== INTERFACES ====================
-
+export interface CouponUsage {
+  id: number;
+  couponId: number;
+  couponCode: string;
+  orderId: number;
+  orderNumber: string;
+  customerId?: number;
+  customerName: string;
+  customerEmail: string;
+  discountAmount: number;
+  originalAmount: number;
+  finalAmount: number;
+  usedAt: string;
+  status: 'SUCCESS' | 'CANCELLED' | 'REFUNDED';
+  orderStatus?: string;
+}
 export interface DashboardStats {
   totalRevenue: number;
   pendingOrders: number;
@@ -89,6 +104,8 @@ export interface Message {
 }
 
 export interface CustomerOrder {
+  couponCode?: string;  // AJOUTER CE CHAMP
+  
   isTemporary: any;
   source: string;
   id: number;
@@ -190,10 +207,10 @@ export interface Coupon {
   expiryDate: string;
   startDate?: string;
   description?: string;
-  maxUses?: number;
+  maxUses?: number;        // ← Limite maximale (ex: 100)
+  usedCount: number;       // ← Compteur actuel (doit être incrémenté)
   minOrderAmount?: number;
   isActive: boolean;
-  usedCount?: number;
   freeShipping?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -1918,37 +1935,7 @@ export class AdminComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  loadCoupons() {
-    console.log('🎫 Chargement coupons...');
-    this.loading.coupons = true;
-    this.adminService.getAllCoupons().pipe(takeUntil(this.destroy$)).subscribe({
-      next: (response: ApiResponse<Coupon[]>) => {
-        console.log('🎫 Coupons response:', response);
-        if (response.success && response.coupons) {
-          this.coupons = response.coupons;
-          console.log(`✅ ${this.coupons.length} coupons chargés`);
-          
-          // Mettre à jour les associations produits-coupons
-          this.updateProductCouponAssociations();
-          
-          // Synchroniser après chargement
-          this.syncCouponsToPages();
-        } else {
-          console.error('❌ Erreur coupons:', response.message);
-          this.showAlert('Erreur lors du chargement des coupons', 'error');
-        }
-        this.loading.coupons = false;
-      },
-      error: (error: any) => {
-        console.error('❌ Erreur API coupons:', error);
-        this.showAlert('Erreur lors du chargement des coupons', 'error');
-        this.loading.coupons = false;
-      }
-    });
-  }
-
-  
-
+ 
   // ==================== GESTION DE STOCK ====================
 
   loadStockMovements(): void {
@@ -5163,123 +5150,7 @@ export class AdminComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  saveCoupon() {
-    if (this.couponForm.invalid) {
-      this.showAlert('Veuillez corriger les erreurs du formulaire', 'warning');
-      this.markFormGroupTouched(this.couponForm);
-      return;
-    }
-
-    console.log('🎫 Sauvegarde coupon...');
-    
-    this.loading.action = true;
-    
-    const formatDateForBackend = (dateString: string): string => {
-      if (!dateString || dateString.trim() === '') {
-        return '';
-      }
-      
-      try {
-        if (dateString.length === 10 && dateString.includes('-')) {
-          return `${dateString}T00:00:00`;
-        }
-        return dateString;
-      } catch (error) {
-        console.error('Erreur formatage date:', error);
-        return '';
-      }
-    };
-
-    const couponData = this.couponForm.value;
-    
-    const couponToSave: any = {
-      code: couponData.code,
-      discountValue: couponData.discountValue,
-      discountType: couponData.discountType,
-      expiryDate: formatDateForBackend(couponData.expiryDate),
-      isActive: couponData.isActive !== undefined ? couponData.isActive : true,
-      applicableProducts: this.selectedCouponProducts || []
-    };
-
-    if (couponData.description) {
-      couponToSave.description = couponData.description;
-    }
-    
-    if (couponData.maxUses && couponData.maxUses > 0) {
-      couponToSave.maxUses = couponData.maxUses;
-    }
-    
-    if (couponData.minOrderAmount && couponData.minOrderAmount > 0) {
-      couponToSave.minOrderAmount = couponData.minOrderAmount;
-    }
-    
-    if (couponData.startDate && couponData.startDate.trim() !== '') {
-      const startDate = formatDateForBackend(couponData.startDate);
-      const expiryDate = formatDateForBackend(couponData.expiryDate);
-      
-      if (new Date(startDate) >= new Date(expiryDate)) {
-        this.showAlert('La date de début doit être antérieure à la date d\'expiration', 'warning');
-        this.loading.action = false;
-        return;
-      }
-      
-      couponToSave.startDate = startDate;
-    }
-    
-    if (couponData.discountExtra !== undefined) {
-      couponToSave.discountExtra = couponData.discountExtra;
-    }
-    
-    if (couponData.freeShipping !== undefined) {
-      couponToSave.freeShipping = couponData.freeShipping;
-    }
-
-    console.log('📤 Données coupon à sauvegarder:', couponToSave);
-
-    const observable = this.selectedCoupon
-      ? this.adminService.updateCoupon(this.selectedCoupon.id, couponToSave)
-      : this.adminService.createCoupon(couponToSave);
-
-    observable.pipe(takeUntil(this.destroy$)).subscribe({
-      next: (response: ApiResponse<Coupon>) => {
-        console.log('📥 Réponse du serveur:', response);
-        
-        if (response.success) {
-          const action = this.selectedCoupon ? 'modifié' : 'créé';
-          const productCount = couponToSave.applicableProducts?.length || 0;
-          const message = `Coupon ${action} avec succès ${productCount > 0 ? `(${productCount} produits)` : ''}`;
-          
-          this.showAlert(message, 'success');
-          this.modals.coupon = false;
-          
-          this.loadCoupons();
-          
-          this.syncCouponsToPages();
-        } else {
-          this.showAlert(response.message || `Erreur lors de la ${this.selectedCoupon ? 'modification' : 'création'}`, 'error');
-        }
-        this.loading.action = false;
-      },
-      error: (error: any) => {
-        console.error('❌ Erreur sauvegarde coupon:', error);
-        
-        let errorMessage = `Erreur lors de la ${this.selectedCoupon ? 'modification' : 'création'}`;
-        
-        if (error.status === 400) {
-          if (error.error && error.error.error) {
-            errorMessage = error.error.error;
-          } else if (error.error && error.error.message) {
-            errorMessage = error.error.message;
-          }
-        } else if (error.status === 500) {
-          errorMessage += ' - Erreur interne du serveur';
-        }
-        
-        this.showAlert(errorMessage, 'error');
-        this.loading.action = false;
-      }
-    });
-  }
+ 
 
   generateCouponCode(): void {
     const prefix = 'PROMO';
@@ -6013,16 +5884,7 @@ export class AdminComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ==================== UTILITAIRES DIVERS ====================
 
-  private markFormGroupTouched(formGroup: FormGroup) {
-    Object.keys(formGroup.controls).forEach(key => {
-      const control = formGroup.get(key);
-      if (control instanceof FormGroup) {
-        this.markFormGroupTouched(control);
-      } else {
-        control?.markAsTouched();
-      }
-    });
-  }
+  
 
   getProductById(productId: number): Product | undefined {
     return this.products.find(p => p.id === productId);
@@ -7380,16 +7242,7 @@ forceSyncSoinOrders(): void {
 
 // ==================== DANS ngOnInit() ====================
 
-ngOnInit() {
-  console.log('Initialisation du composant Admin...');
-  this.checkAuthentication();
-  this.testApiConnection();
-  this.setupEventListeners();
-  this.setupAutoCouponSync();
-  
-  // AJOUTER CETTE LIGNE - Écoute des commandes soin
-  this.setupSoinOrderListener();
-}
+
 
 // ==================== DANS loadInitialData() ====================
 
@@ -7924,60 +7777,7 @@ loadOrderItems() {
   });
 }
 
-openOrderDetail(order: CustomerOrder | null) {
-  console.log('📋 openOrderDetail appelée avec:', order);
-  
-  if (!order) {
-    // NOUVELLE COMMANDE
-    this.selectedOrder = {
-      id: this.generateTempOrderId(), // Utiliser une méthode pour générer un ID temporaire
-      orderNumber: `TEMP-CMD-${Date.now()}`,
-      customerName: '',
-      customerEmail: '',
-      status: 'PENDING',
-      orderDate: new Date().toISOString(),
-      subtotal: 0,
-      shippingCost: 0,
-      totalAmount: 0,
-      orderItems: [],
-      trackingNumber: '',
-      notes: '',
-      source: 'MANUAL',
-      isTemporary: true // Ajouter un flag pour identifier les commandes temporaires
-    } as CustomerOrder;
-    
-    console.log('🆕 Nouvelle commande créée (temporaire):', this.selectedOrder);
-  } else {
-    // COMMANDE EXISTANTE
-    this.selectedOrder = { ...order };
-    
-    // GARANTIR UN ID VALIDE
-    if (!this.selectedOrder.id || this.selectedOrder.id <= 0) {
-      console.warn('⚠️ Commande sans ID valide:', this.selectedOrder);
-      
-      // Stratégie de récupération d'ID
-      const newId = this.extractOrGenerateOrderId(this.selectedOrder);
-      this.selectedOrder.id = newId;
-      
-      console.log('✅ ID attribué/regénéré:', this.selectedOrder.id);
-    }
-    
-    console.log('📄 Commande chargée:', {
-      id: this.selectedOrder.id,
-      orderNumber: this.selectedOrder.orderNumber,
-      status: this.selectedOrder.status
-    });
-  }
-  
-  // Mettre à jour le formulaire
-  this.orderStatusForm.patchValue({
-    status: this.selectedOrder.status,
-    trackingNumber: this.selectedOrder.trackingNumber || '',
-    notes: this.selectedOrder.notes || ''
-  });
-  
-  this.modals.orderDetail = true;
-}
+
 
 // Méthode pour générer un ID temporaire
 private generateTempOrderId(): number {
@@ -7985,44 +7785,6 @@ private generateTempOrderId(): number {
 }
 
 // Méthode pour extraire ou générer un ID
-private extractOrGenerateOrderId(order: CustomerOrder): number {
-  // 1. Si l'orderNumber contient un ID
-  if (order.orderNumber) {
-    const match = order.orderNumber.match(/CMD(\d+)/i);
-    if (match && match[1]) {
-      const idFromNumber = parseInt(match[1], 10);
-      if (!isNaN(idFromNumber) && idFromNumber > 0) {
-        return idFromNumber;
-      }
-    }
-    
-    // Vérifier d'autres formats
-    const match2 = order.orderNumber.match(/(\d+)/);
-    if (match2 && match2[1]) {
-      const idFromNumber = parseInt(match2[1], 10);
-      if (!isNaN(idFromNumber) && idFromNumber > 0) {
-        return idFromNumber;
-      }
-    }
-  }
-  
-  // 2. Si on a un timestamp dans les données
-  if (order.orderDate) {
-    try {
-      const date = new Date(order.orderDate);
-      const timestampId = date.getTime();
-      if (timestampId > 0) {
-        return timestampId;
-      }
-    } catch (e) {
-      console.warn('Erreur conversion date:', e);
-    }
-  }
-  
-  // 3. Générer un nouvel ID temporaire
-  console.warn('⚠️ Impossible d\'extraire ID, génération temporaire');
-  return this.generateTempOrderId();
-}
 
 loadOrders() {
   if (!this.isLoggedIn) return;
@@ -8289,54 +8051,7 @@ cancelOrder(order: CustomerOrder): void {
 }
 /**
  * Confirmer une commande - VERSION CORRIGÉE
- */
-confirmOrder(orderParam: CustomerOrder | string): void {
-  console.log('📦 Confirmation commande appelée avec:', orderParam);
-  
-  let order: CustomerOrder | undefined;
-  let orderNumber: string;
-  
-  // Détecter le type de paramètre
-  if (typeof orderParam === 'string') {
-    // Paramètre est un orderNumber
-    orderNumber = orderParam;
-    
-    // CORRECTION: Chercher dans la liste locale
-    order = this.findOrderByNumber(orderNumber);
-    
-    if (!order) {
-      console.log('🔍 Commande non trouvée dans la liste locale, recherche dans le cache...');
-      
-      // Chercher dans le cache localStorage
-      const cachedOrders = JSON.parse(localStorage.getItem('admin_all_orders') || '[]');
-      const cachedOrder = cachedOrders.find((o: any) => o.orderNumber === orderNumber);
-      
-      if (cachedOrder) {
-        order = this.transformToCustomerOrder(cachedOrder);
-        console.log('✅ Commande trouvée dans le cache:', order);
-        
-        // Ajouter à la liste des commandes si elle n'y est pas déjà
-        if (!this.orders.some(o => o.orderNumber === orderNumber)) {
-          this.orders.unshift(order);
-        }
-      }
-    }
-  } else {
-    // Paramètre est un CustomerOrder
-    order = orderParam;
-    orderNumber = order.orderNumber;
-  }
-  
-  // CORRECTION: Vérifier si order est undefined
-  if (!order) {
-    console.error('❌ Commande non trouvée pour:', orderNumber || orderParam);
-    this.showAlert('Commande non trouvée', 'error');
-    return;
-  }
-  
-  // CORRECTION: Maintenant order est définitivement un CustomerOrder
-  this.processOrderConfirmation(order);
-}
+
 
 /**
  * Trouver une commande par son numéro - RETOURNE CustomerOrder | undefined
@@ -8394,109 +8109,10 @@ private generateOrderId(orderNumber: string): number {
 /**
  * Traiter la confirmation de commande - ACCEPTE CustomerOrder
  */
-private processOrderConfirmation(order: CustomerOrder): void {
-  console.log('✅ Confirmation de:', order.orderNumber);
-  
-  // Vérifier si la commande est déjà confirmée
-  if (order.status === 'CONFIRMED' || order.status === 'CONFIRMÉE') {
-    this.showAlert(`Cette commande est déjà confirmée`, 'info');
-    return;
-  }
-  
-  // 1. Mettre à jour le statut localement
-  order.status = 'CONFIRMED';
-  order.updatedAt = new Date().toISOString();
-  
-  // 2. GARANTIR UN ID VALIDE
-  if (!order.id || order.id <= 0) {
-    order.id = this.generateOrderId(order.orderNumber);
-    console.log(`🔧 ID généré: ${order.id}`);
-  }
-  
-  // 3. Sauvegarder dans localStorage
-  this.updateOrderInStorage(order);
-  
-  // 4. Mettre à jour l'affichage
-  this.updateOrderInList(order);
-  
-  // 5. Afficher notification
-  this.showAlert(`Commande #${order.orderNumber} confirmée avec succès!`, 'success');
-  
-  // 6. Tenter la synchronisation API (en background)
-  this.trySyncToApi(order);
-  
-  // 7. Mettre à jour les statistiques
-  setTimeout(() => {
-    this.updateDashboardStats();
-  }, 1000);
-}
-
 /**
  * Mettre à jour une commande dans le stockage
  */
-private updateOrderInStorage(order: CustomerOrder): void {
-  try {
-    // 1. Mettre à jour admin_all_orders (toutes commandes)
-    const allOrders = JSON.parse(localStorage.getItem('admin_all_orders') || '[]');
-    const existingIndex = allOrders.findIndex((o: any) => 
-      o.orderNumber === order.orderNumber
-    );
-    
-    const orderToSave = {
-      ...order,
-      lastUpdate: new Date().toISOString()
-    };
-    
-    if (existingIndex !== -1) {
-      allOrders[existingIndex] = orderToSave;
-    } else {
-      allOrders.unshift({
-        ...orderToSave,
-        synchronizedAt: new Date().toISOString()
-      });
-    }
-    
-    localStorage.setItem('admin_all_orders', JSON.stringify(allOrders));
-    
-    // 2. Mettre à jour le cache spécifique si nécessaire
-    if (order.source === 'soin') {
-      const soinOrders = JSON.parse(localStorage.getItem('admin_soin_orders') || '[]');
-      const soinIndex = soinOrders.findIndex((o: any) => 
-        o.orderNumber === order.orderNumber
-      );
-      
-      if (soinIndex !== -1) {
-        soinOrders[soinIndex] = orderToSave;
-      } else {
-        soinOrders.unshift(orderToSave);
-      }
-      localStorage.setItem('admin_soin_orders', JSON.stringify(soinOrders));
-    }
-    
-    console.log('💾 Commande sauvegardée dans le stockage');
-    
-  } catch (error) {
-    console.error('❌ Erreur sauvegarde stockage:', error);
-  }
-}
 
-/**
- * Mettre à jour la commande dans la liste affichée
- */
-private updateOrderInList(updatedOrder: CustomerOrder): void {
-  const index = this.orders.findIndex(o => 
-    o.orderNumber === updatedOrder.orderNumber
-  );
-  
-  if (index !== -1) {
-    this.orders[index] = { ...updatedOrder };
-  } else {
-    this.orders.unshift(updatedOrder);
-  }
-  
-  // Forcer la détection des changements
-  this.orders = [...this.orders];
-}
 
 /**
  * Tenter la synchronisation avec l'API
@@ -8532,65 +8148,8 @@ private trySyncToApi(order: CustomerOrder): void {
     });
 }
 
-/**
- * Expédier une commande - VERSION CORRIGÉE
- */
-shipOrder(orderParam: CustomerOrder | string): void {
-  console.log('🚚 Expédition commande:', orderParam);
-  
-  let order: CustomerOrder | undefined;
-  
-  if (typeof orderParam === 'string') {
-    order = this.findOrderByNumber(orderParam);
-  } else {
-    order = orderParam;
-  }
-  
-  // CORRECTION: Vérifier si order est undefined
-  if (!order) {
-    this.showAlert('Commande non trouvée', 'error');
-    return;
-  }
-  
-  // Vérifier que la commande est confirmée
-  if (!(order.status === 'CONFIRMED' || order.status === 'CONFIRMÉE')) {
-    this.showAlert('La commande doit être confirmée avant d\'être expédiée', 'warning');
-    return;
-  }
-  
-  // Demander le numéro de suivi
-  const trackingNumber = prompt('Entrez le numéro de suivi (optionnel):');
-  
-  if (trackingNumber === null) {
-    return; // Annulé par l'utilisateur
-  }
-  
-  // Mettre à jour localement
-  order.status = 'SHIPPED';
-  order.trackingNumber = trackingNumber || '';
-  order.updatedAt = new Date().toISOString();
-  
-  // Sauvegarder
-  this.updateOrderInStorage(order);
-  this.updateOrderInList(order);
-  
-  this.showAlert(`Commande #${order.orderNumber} marquée comme expédiée!`, 'success');
-  
-  // Tenter l'API
-  if (order.id && order.id > 0) {
-    this.adminService.shipOrder(order.id, trackingNumber || '')
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => console.log('✅ Expédition API'),
-        error: () => console.log('ℹ️ API non disponible')
-      });
-  }
-  
-  // Mettre à jour les stats
-  setTimeout(() => {
-    this.updateDashboardStats();
-  }, 500);
-}
+
+
 
 /**
  * Méthode utilitaire pour garantir un CustomerOrder valide
@@ -8781,129 +8340,7 @@ applyCouponToSlowMovingProducts(coupon: Coupon, daysThreshold: number = 30): voi
   const productIds = slowProducts.map(p => p.id);
   this.autoApplyCouponToProducts(coupon, undefined, productIds);
 }
-syncCouponsToPages(): void {
-  console.log('🔄 Synchronisation des coupons avec les pages...');
-  
-  if (!this.coupons || this.coupons.length === 0) {
-    console.warn('⚠️ Aucun coupon à synchroniser');
-    return;
-  }
-  
-  if (!this.products || this.products.length === 0) {
-    console.warn('⚠️ Aucun produit pour filtrer les coupons');
-    return;
-  }
-  
-  const savonCoupons: Coupon[] = [];
-  const huilesCoupons: Coupon[] = [];
-  const huileOliveCoupons: Coupon[] = [];
-  const soinCoupons: Coupon[] = [];
-  
-  // ============ AJOUTER CE FILTRE ============
-  // Exclure automatiquement les coupons 15% universels
-  const filteredCoupons = this.coupons.filter(coupon => {
-    // Vérifier si c'est un coupon 15% universel
-    const isUniversal15Percent = 
-      coupon.discountValue === 15 && 
-      coupon.discountType === 'PERCENTAGE' && 
-      (!coupon.applicableProducts || coupon.applicableProducts.length === 0);
-    
-    if (isUniversal15Percent) {
-      console.log(`🚫 Coupon 15% universel ignoré: ${coupon.code}`);
-      return false;
-    }
-    
-    // Vérifier actif et non expiré
-    const isActive = coupon.isActive && !this.isCouponExpired(coupon);
-    if (!isActive) {
-      console.log(`❌ Coupon inactif/expiré: ${coupon.code}`);
-      return false;
-    }
-    
-    return true;
-  });
-  // ===========================================
-  
-  const activeCoupons = filteredCoupons.filter(coupon => 
-    coupon.isActive && !this.isCouponExpired(coupon)
-  );
-  
-  console.log(`📊 ${activeCoupons.length} coupons actifs après filtrage (originaux: ${this.coupons.length})`);
-  
-  activeCoupons.forEach(coupon => {
-    // ============ MODIFICATION ICI ============
-    // Maintenant on autorise les coupons universels SAUF le 15%
-    if (!coupon.applicableProducts || coupon.applicableProducts.length === 0) {
-      // C'est un coupon universel (mais pas 15% car déjà filtré)
-      console.log(`🌍 Coupon universel ${coupon.code}: ${coupon.discountValue}${coupon.discountType === 'PERCENTAGE' ? '%' : 'DT'}`);
-      
-      // Distribuer aux 4 catégories
-      savonCoupons.push(coupon);
-      huilesCoupons.push(coupon);
-      huileOliveCoupons.push(coupon);
-      soinCoupons.push(coupon);
-      
-      console.log(`✅ ${coupon.code} → Toutes catégories (coupon universel)`);
-      return;
-    }
-    // ==========================================
-    
-    let savonCount = 0;
-    let huilesCount = 0;
-    let oliveCount = 0;
-    let soinCount = 0;
-    
-    coupon.applicableProducts.forEach(productId => {
-      const product = this.products.find(p => p.id === productId);
-      if (product) {
-        if (this.isSavonProduct(product)) savonCount++;
-        if (this.isHuilesEssentiellesProduct(product)) huilesCount++;
-        if (this.isHuileOliveProduct(product)) oliveCount++;
-        if (this.isSoinProduct(product)) soinCount++;
-      }
-    });
-    
-    const maxCount = Math.max(savonCount, huilesCount, oliveCount, soinCount);
-    
-    if (maxCount === 0) {
-      console.warn(`⚠️ Coupon ${coupon.code} : aucun produit valide`);
-      return;
-    }
-    
-    if (savonCount === maxCount && savonCount > 0) {
-      savonCoupons.push(coupon);
-      console.log(`✅ ${coupon.code} → Savon (${savonCount} produits)`);
-    } 
-    if (huilesCount === maxCount && huilesCount > 0) {
-      huilesCoupons.push(coupon);
-      console.log(`✅ ${coupon.code} → Huiles (${huilesCount} produits)`);
-    }
-    if (oliveCount === maxCount && oliveCount > 0) {
-      huileOliveCoupons.push(coupon);
-      console.log(`✅ ${coupon.code} → Huile d'olive (${oliveCount} produits)`);
-    }
-    if (soinCount === maxCount && soinCount > 0) {
-      soinCoupons.push(coupon);
-      console.log(`✅ ${coupon.code} → Soin (${soinCount} produits)`);
-    }
-  });
-  
-  localStorage.setItem('savonCoupons', JSON.stringify(savonCoupons));
-  localStorage.setItem('huilesEssentiellesCoupons', JSON.stringify(huilesCoupons));
-  localStorage.setItem('huileOliveCoupons', JSON.stringify(huileOliveCoupons));
-  localStorage.setItem('soinCoupons', JSON.stringify(soinCoupons));
-  
-  console.log(`📁 Résultat:`, {
-    savon: savonCoupons.length,
-    huiles: huilesCoupons.length,
-    olive: huileOliveCoupons.length,
-    soin: soinCoupons.length
-  });
-  
-  this.syncProductsWithCouponsToPages();
-  
-  this.showAlert('Coupons synchronisés avec les pages', 'success');
-}
+
 forceSyncSoinCoupons(): void {
   console.log('🎯 Synchronisation FORCÉE pour la page soin...');
   
@@ -8978,5 +8415,3210 @@ syncSoinProductsWithCoupons(): void {
   localStorage.setItem('soinProducts', JSON.stringify(soinProducts));
   
   window.dispatchEvent(new Event('soinProductsUpdated'));
+}
+// Dans AdminComponent, remplacer la méthode syncCouponsToPages()
+
+
+
+ 
+forceFullSyncAfterCouponSave(): void {
+  console.log('🔄 SYNCHRONISATION COMPLÈTE FORCÉE APRÈS SAUVEGARDE...');
+  
+  // 1. Mettre à jour les associations produits-coupons
+  this.updateProductCouponAssociations();
+  
+  // 2. Mettre à jour l'affichage des produits
+  this.updateProductDiscountDisplay();
+  
+  // 3. Sauvegarder dans localStorage (admin)
+  this.saveAllToLocalStorage();
+  
+  // 4. Synchroniser les coupons vers les pages
+  this.syncCouponsToPages();
+  
+  // 5. Synchroniser les produits avec coupons pour chaque page
+  this.syncAllProductsWithCouponsToPages();
+  
+  // 6. Émettre des événements pour toutes les pages
+  this.emitEventsToAllPages();
+  
+  console.log('✅ SYNCHRONISATION COMPLÈTE TERMINÉE');
+  this.showAlert('Coupon synchronisé automatiquement vers toutes les pages', 'success');
+}
+
+/**
+ * Sauvegarder toutes les données dans localStorage
+ */
+saveAllToLocalStorage(): void {
+  try {
+    // Sauvegarder les produits admin
+    localStorage.setItem('adminProducts', JSON.stringify(this.products));
+    
+    // Sauvegarder les coupons admin
+    localStorage.setItem('adminCoupons', JSON.stringify(this.coupons));
+    
+    // Sauvegarder les associations produits-coupons
+    const productCoupons: { [key: number]: number[] } = {};
+    this.products.forEach(product => {
+      if (product.couponIds && product.couponIds.length > 0) {
+        productCoupons[product.id] = product.couponIds;
+      }
+    });
+    localStorage.setItem('productCoupons', JSON.stringify(productCoupons));
+    
+    console.log('✅ Toutes les données sauvegardées dans localStorage');
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde localStorage:', error);
+  }
+}
+
+/**
+ * Synchroniser tous les produits avec coupons vers les pages
+ */
+syncAllProductsWithCouponsToPages(): void {
+  console.log('🔄 Synchronisation des produits avec coupons vers les pages...');
+  
+  // Récupérer tous les produits
+  const allProducts = [...this.products];
+  
+  // Filtrer par type
+  const savonProducts = allProducts.filter(p => this.isSavonProduct(p));
+  const huilesProducts = allProducts.filter(p => this.isHuilesEssentiellesProduct(p));
+  const oliveProducts = allProducts.filter(p => this.isHuileOliveProduct(p));
+  const soinProducts = allProducts.filter(p => this.isSoinProduct(p));
+  
+  // Récupérer les coupons par page
+  const savonCoupons = JSON.parse(localStorage.getItem('savonCoupons') || '[]');
+  const huilesCoupons = JSON.parse(localStorage.getItem('huilesEssentiellesCoupons') || '[]');
+  const oliveCoupons = JSON.parse(localStorage.getItem('huileOliveCoupons') || '[]');
+  const soinCoupons = JSON.parse(localStorage.getItem('soinCoupons') || '[]');
+  
+  // Appliquer les coupons aux produits de chaque page
+  this.applyCouponsToProductsForPage(savonProducts, savonCoupons, 'savon');
+  this.applyCouponsToProductsForPage(huilesProducts, huilesCoupons, 'huiles');
+  this.applyCouponsToProductsForPage(oliveProducts, oliveCoupons, 'olive');
+  this.applyCouponsToProductsForPage(soinProducts, soinCoupons, 'soin');
+  
+  // Sauvegarder dans localStorage
+  localStorage.setItem('savonProducts', JSON.stringify(savonProducts));
+  localStorage.setItem('huilesEssentiellesProducts', JSON.stringify(huilesProducts));
+  localStorage.setItem('huileOliveProducts', JSON.stringify(oliveProducts));
+  localStorage.setItem('soinProducts', JSON.stringify(soinProducts));
+}
+
+/**
+ * Appliquer les coupons aux produits d'une page spécifique
+ */
+applyCouponsToProductsForPage(products: Product[], coupons: Coupon[], pageName: string): void {
+  console.log(`🔄 Application coupons à la page ${pageName} (${products.length} produits, ${coupons.length} coupons)`);
+  
+  products.forEach(product => {
+    // Trouver les coupons applicables à ce produit
+    const applicableCoupons = coupons.filter(coupon => 
+      !coupon.applicableProducts || 
+      coupon.applicableProducts.length === 0 || 
+      coupon.applicableProducts.includes(product.id)
+    );
+    
+    if (applicableCoupons.length > 0) {
+      // Trouver le meilleur coupon
+      const bestCoupon = this.getBestProductCouponFromList(product, applicableCoupons);
+      if (bestCoupon) {
+        product.hasDiscount = true;
+        product.discountedPrice = this.calculateDiscountedPrice(product.price, bestCoupon);
+        product.discountPercentage = Math.round((1 - (product.discountedPrice! / product.price)) * 100);
+        product.originalPrice = product.price;
+        product.couponIds = applicableCoupons.map(c => c.id);
+      }
+    } else {
+      // Pas de coupon applicable
+      product.hasDiscount = false;
+      product.discountedPrice = undefined;
+      product.discountPercentage = undefined;
+      product.originalPrice = undefined;
+      product.couponIds = [];
+    }
+  });
+}
+
+/**
+ * Émettre des événements pour toutes les pages
+ */
+emitEventsToAllPages(): void {
+  window.dispatchEvent(new Event('savonProductsUpdated'));
+  window.dispatchEvent(new Event('huilesEssentiellesProductsUpdated'));
+  window.dispatchEvent(new Event('huileOliveProductsUpdated'));
+  window.dispatchEvent(new Event('soinProductsUpdated'));
+  
+  window.dispatchEvent(new Event('savonCouponsUpdated'));
+  window.dispatchEvent(new Event('huilesEssentiellesCouponsUpdated'));
+  window.dispatchEvent(new Event('huileOliveCouponsUpdated'));
+  window.dispatchEvent(new Event('soinCouponsUpdated'));
+  
+  // Événement général
+  window.dispatchEvent(new CustomEvent('adminCouponsUpdated', {
+    detail: {
+      coupons: this.coupons,
+      timestamp: new Date().toISOString()
+    }
+  }));
+}
+/**
+ * Utiliser un coupon (appelé depuis le panier/commande)
+ */
+
+/**
+ * Écouter les événements d'utilisation de coupons
+ */
+
+/**
+ * Incrémenter le compteur d'utilisations d'un coupon
+ */
+
+
+/**
+ * Sauvegarder les coupons dans localStorage
+ */
+saveCouponsToLocalStorage(): void {
+  try {
+    localStorage.setItem('adminCoupons', JSON.stringify(this.coupons));
+    console.log('💾 Coupons sauvegardés dans localStorage');
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde coupons:', error);
+  }
+}
+
+/**
+ * Sauvegarder une utilisation de coupon
+ */
+saveCouponUsage(usageData: any): void {
+  try {
+    const usages = JSON.parse(localStorage.getItem('couponUsages') || '[]');
+    
+    const usage = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      couponCode: usageData.couponCode,
+      orderNumber: usageData.orderNumber,
+      customerName: usageData.customerName,
+      customerEmail: usageData.customerEmail,
+      discountAmount: usageData.discountAmount || 0,
+      originalAmount: usageData.originalAmount || 0,
+      finalAmount: usageData.finalAmount || 0,
+      usedAt: new Date().toISOString()
+    };
+    
+    usages.unshift(usage);
+    localStorage.setItem('couponUsages', JSON.stringify(usages));
+    
+    console.log('💾 Utilisation sauvegardée:', usage);
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde utilisation:', error);
+  }
+}
+
+/**
+ * Vérifier les nouvelles utilisations
+ */
+checkForNewCouponUsages(): void {
+  try {
+    const pendingUsages = JSON.parse(localStorage.getItem('pendingCouponUsages') || '[]');
+    
+    if (pendingUsages.length > 0) {
+      console.log(`📦 ${pendingUsages.length} utilisation(s) en attente détectée(s)`);
+      
+      pendingUsages.forEach((usage: any) => {
+        this.incrementCouponUsage(usage.couponCode, usage);
+      });
+      
+      // Vider la file d'attente
+      localStorage.removeItem('pendingCouponUsages');
+    }
+  } catch (error) {
+    console.error('❌ Erreur vérification utilisations:', error);
+  }
+}
+
+/**
+ * Mettre à jour l'affichage d'un coupon
+ */
+updateCouponDisplay(coupon: Coupon): void {
+  // Mettre à jour dans le tableau
+  const index = this.coupons.findIndex(c => c.id === coupon.id);
+  if (index !== -1) {
+    this.coupons[index] = { ...coupon };
+  }
+}
+
+/**
+ * ✅ Incrémente le compteur d'utilisations d'un coupon
+ * @param couponCode Code du coupon à incrémenter
+ * @param reservationId ID de la réservation (optionnel pour logging)
+ */
+
+
+/**
+ * ✅ Sauvegarde l'utilisation du coupon dans localStorage
+ */
+private saveCouponUsageToLocalStorage(couponCode: string, newCount: number, reservationId?: number): void {
+  try {
+    const couponCounters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    couponCounters[couponCode] = newCount;
+    localStorage.setItem('coupon_counters', JSON.stringify(couponCounters));
+    
+    // Enregistrer l'historique d'utilisation
+    const usageHistory = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    usageHistory.push({
+      couponCode: couponCode,
+      newCount: newCount,
+      timestamp: new Date().toISOString(),
+      reservationId: reservationId || null
+    });
+    localStorage.setItem('coupon_usage_history', JSON.stringify(usageHistory));
+    
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde compteur coupon:', error);
+  }
+}
+
+/**
+ * ✅ Affiche une notification pour le coupon
+ */
+private showCouponNotification(message: string): void {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 9999;
+    font-size: 14px;
+    animation: slideIn 0.3s ease;
+    border-left: 4px solid #ffd700;
+  `;
+  
+  notification.innerHTML = `
+    <div style="display: flex; align-items: center;">
+      <span style="font-size: 20px; margin-right: 10px;">🎟️</span>
+      <div>
+        <strong style="display: block; margin-bottom: 4px;">Mise à jour coupon</strong>
+        <span>${message}</span>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+/**
+ * ✅ Synchronise les compteurs avec l'API
+ */
+syncCouponCountersWithAPI(): void {
+  console.log('🔄 Synchronisation des compteurs coupons avec API...');
+  
+  const couponsToSync = this.coupons.filter(c => c.usedCount > 0);
+  
+  couponsToSync.forEach(coupon => {
+    this.adminService.updateCoupon(coupon.id, { usedCount: coupon.usedCount })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            console.log(`✅ Coupon ${coupon.code} synchronisé: ${coupon.usedCount} utilisations`);
+          }
+        },
+        error: (error) => {
+          console.error(`❌ Erreur synchronisation coupon ${coupon.code}:`, error);
+        }
+      });
+  });
+}
+// ==================== MÉTHODE useCoupon CORRIGÉE ====================
+
+
+/**
+ * Incrémente le compteur local d'un coupon
+ */
+
+
+/**
+ * Récupère l'utilisation locale d'un coupon
+ */
+private getLocalCouponUsage(couponCode: string): number {
+  try {
+    const coupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    const coupon = coupons.find((c: any) => c.code === couponCode);
+    return coupon?.usedCount || 0;
+  } catch (error) {
+    return 0;
+  }
+}
+
+/**
+ * Met à jour les coupons dans le composant Admin
+ */
+private updateCouponsInComponent(couponCode: string, newCount: number): void {
+  // Si le composant Admin est accessible via un service global
+  if (window && (window as any).adminComponent) {
+    (window as any).adminComponent.updateCouponCount(couponCode, newCount);
+  }
+}
+
+/**
+ * Émet un événement pour mettre à jour tous les composants
+ */
+private emitCouponUsageEvent(couponCode: string, usedCount: number): void {
+  const event = new CustomEvent('couponUsageUpdated', {
+    detail: {
+      couponCode: couponCode,
+      usedCount: usedCount,
+      timestamp: new Date().toISOString()
+    }
+  });
+  window.dispatchEvent(event);
+  console.log(`📢 Événement émis pour ${couponCode}: ${usedCount} utilisations`);
+}
+// À AJOUTER DANS AdminComponent
+
+/**
+ * Écouteur pour les événements d'utilisation de coupons
+ */
+
+/**
+ * Incrémente le compteur d'un coupon à partir d'un événement
+ */
+
+/**
+ * Sauvegarde les compteurs de coupons dans localStorage
+ */
+
+/**
+ * Récupère l'historique des utilisations
+ */
+
+/**
+ * Charge les compteurs depuis localStorage
+ */
+private loadCouponCountersFromStorage(): void {
+  try {
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    
+    // Compter les utilisations depuis l'historique
+    const usageCounts: { [key: string]: number } = {};
+    history.forEach((h: any) => {
+      usageCounts[h.couponCode] = (usageCounts[h.couponCode] || 0) + 1;
+    });
+    
+    // Mettre à jour les coupons
+    this.coupons.forEach(coupon => {
+      // Priorité à l'historique (plus fiable)
+      if (usageCounts[coupon.code] !== undefined) {
+        coupon.usedCount = usageCounts[coupon.code];
+      } 
+      // Sinon utiliser les compteurs
+      else if (counters[coupon.code] !== undefined) {
+        coupon.usedCount = counters[coupon.code];
+      }
+      // Sinon garder la valeur de l'API
+      else {
+        coupon.usedCount = coupon.usedCount || 0;
+      }
+    });
+    
+    console.log('📊 Compteurs coupons chargés depuis localStorage');
+  } catch (error) {
+    console.error('❌ Erreur chargement compteurs:', error);
+  }
+}
+/**
+ * DIAGNOSTIC COMPLET : Analyse le parcours des coupons
+ * de la commande jusqu'à l'affichage dans l'admin
+ */
+
+
+/**
+ * DIAGNOSTIC 1 : Vérifier les coupons dans l'admin
+ */
+private diagnosticCouponsAdmin(): void {
+  console.log('\n📋 1. COUPONS DANS L\'ADMIN');
+  console.log('-'.repeat(40));
+  
+  console.log(`Total coupons dans le composant: ${this.coupons.length}`);
+  
+  if (this.coupons.length === 0) {
+    console.error('❌ Aucun coupon dans le composant admin!');
+    return;
+  }
+  
+  // Afficher chaque coupon avec ses détails
+  this.coupons.forEach((coupon, index) => {
+    console.log(`\n🎫 Coupon #${index + 1}: ${coupon.code}`);
+    console.log(`   ID: ${coupon.id}`);
+    console.log(`   Type: ${coupon.discountType} - Valeur: ${coupon.discountValue}`);
+    console.log(`   Utilisations (composant): ${coupon.usedCount || 0}`);
+    console.log(`   Max utilisations: ${coupon.maxUses || 'Illimité'}`);
+    console.log(`   Actif: ${coupon.isActive ? '✅' : '❌'}`);
+    console.log(`   Expire: ${coupon.expiryDate || 'N/A'}`);
+    console.log(`   Produits applicables: ${coupon.applicableProducts?.length || 0}`);
+    
+    // Vérifier si le coupon est expiré
+    if (coupon.expiryDate) {
+      const now = new Date();
+      const expiry = new Date(coupon.expiryDate);
+      if (expiry < now) {
+        console.warn(`   ⚠️ Coupon EXPIRÉ depuis ${this.getDaysDifference(coupon.expiryDate)} jours`);
+      }
+    }
+  });
+}
+
+/**
+ * DIAGNOSTIC 2 : Vérifier les coupons dans le localStorage
+ */
+private diagnosticLocalStorageCoupons(): void {
+  console.log('\n📦 2. COUPONS DANS LOCALSTORAGE');
+  console.log('-'.repeat(40));
+  
+  const sources = [
+    'adminCoupons',
+    'savonCoupons',
+    'huilesEssentiellesCoupons',
+    'huileOliveCoupons',
+    'soinCoupons',
+    'coupon_counters',
+    'coupon_usage_history'
+  ];
+  
+  sources.forEach(source => {
+    try {
+      const data = localStorage.getItem(source);
+      if (data) {
+        const parsed = JSON.parse(data);
+        console.log(`\n📁 ${source}:`);
+        
+        if (Array.isArray(parsed)) {
+          console.log(`   Nombre: ${parsed.length}`);
+          
+          // Afficher les coupons avec leurs compteurs
+          parsed.forEach((item: any, i: number) => {
+            if (item.code) {
+              console.log(`   ${i+1}. ${item.code} - utilisations: ${item.usedCount || 0}`);
+            }
+          });
+          
+          // Vérifier si les compteurs sont cohérents
+          parsed.forEach((item: any) => {
+            if (item.code) {
+              const adminCoupon = this.coupons.find(c => c.code === item.code);
+              if (adminCoupon && adminCoupon.usedCount !== item.usedCount) {
+                console.warn(`   ⚠️ INCOHÉRENCE: ${item.code} - Admin:${adminCoupon.usedCount} vs Storage:${item.usedCount}`);
+              }
+            }
+          });
+        } else {
+          console.log(`   Contenu:`, parsed);
+        }
+      } else {
+        console.log(`\n📁 ${source}: ❌ NON TROUVÉ`);
+      }
+    } catch (error) {
+      console.error(`   ❌ Erreur parsing ${source}:`, error);
+    }
+  });
+}
+
+/**
+ * DIAGNOSTIC 3 : Vérifier les événements
+ */
+
+/**
+ * DIAGNOSTIC 4 : Vérifier les compteurs et l'historique
+ */
+private diagnosticCompteurs(): void {
+  console.log('\n📊 4. COMPTEURS ET HISTORIQUE');
+  console.log('-'.repeat(40));
+  
+  try {
+    // Vérifier les compteurs
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    console.log('\n🔢 Compteurs:');
+    Object.keys(counters).forEach(code => {
+      console.log(`   ${code}: ${counters[code]} utilisations`);
+      
+      // Vérifier avec le coupon dans l'admin
+      const adminCoupon = this.coupons.find(c => c.code === code);
+      if (adminCoupon) {
+        if (adminCoupon.usedCount !== counters[code]) {
+          console.warn(`   ⚠️ Admin:${adminCoupon.usedCount} vs Compteur:${counters[code]}`);
+        }
+      }
+    });
+    
+    // Vérifier l'historique
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    console.log(`\n📜 Historique (${history.length} entrées):`);
+    
+    if (history.length > 0) {
+      // Afficher les 5 dernières entrées
+      history.slice(-5).forEach((h: any, i: number) => {
+        console.log(`   ${i+1}. ${h.couponCode} - ${h.orderNumber} - ${new Date(h.usedAt).toLocaleString()}`);
+      });
+      
+      // Grouper par coupon
+      const grouped: any = {};
+      history.forEach((h: any) => {
+        grouped[h.couponCode] = (grouped[h.couponCode] || 0) + 1;
+      });
+      
+      console.log('\n   Résumé par coupon:');
+      Object.keys(grouped).forEach(code => {
+        console.log(`   • ${code}: ${grouped[code]} utilisations`);
+      });
+    }
+    
+    // Vérifier les utilisations en attente
+    const pending = JSON.parse(localStorage.getItem('pending_coupon_usages') || '[]');
+    if (pending.length > 0) {
+      console.warn(`\n⏳ Utilisations en attente: ${pending.length}`);
+      pending.forEach((p: any, i: number) => {
+        console.warn(`   ${i+1}. ${p.couponCode} - en attente depuis ${new Date(p.timestamp).toLocaleString()}`);
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur analyse compteurs:', error);
+  }
+}
+
+/**
+ * DIAGNOSTIC 5 : Vérifier les pages spécifiques
+ */
+private diagnosticPagesSpecifiques(): void {
+  console.log('\n🌐 5. PAGES SPÉCIFIQUES');
+  console.log('-'.repeat(40));
+  
+  const pages = [
+    { name: 'Savon', key: 'savonCoupons', productsKey: 'savonProducts' },
+    { name: 'Huiles Essentielles', key: 'huilesEssentiellesCoupons', productsKey: 'huilesEssentiellesProducts' },
+    { name: 'Huile Olive', key: 'huileOliveCoupons', productsKey: 'huileOliveProducts' },
+    { name: 'Soin', key: 'soinCoupons', productsKey: 'soinProducts' }
+  ];
+  
+  pages.forEach(page => {
+    console.log(`\n📄 ${page.name}:`);
+    
+    try {
+      const coupons = JSON.parse(localStorage.getItem(page.key) || '[]');
+      const products = JSON.parse(localStorage.getItem(page.productsKey) || '[]');
+      
+      console.log(`   Coupons: ${coupons.length}`);
+      console.log(`   Produits: ${products.length}`);
+      
+      if (coupons.length > 0) {
+        coupons.forEach((c: any) => {
+          console.log(`   • ${c.code} - utilisations: ${c.usedCount || 0}`);
+        });
+      }
+      
+      // Vérifier la cohérence avec l'admin
+      coupons.forEach((pageCoupon: any) => {
+        const adminCoupon = this.coupons.find(c => c.code === pageCoupon.code);
+        if (adminCoupon && adminCoupon.usedCount !== pageCoupon.usedCount) {
+          console.warn(`   ⚠️ INCOHÉRENCE: ${pageCoupon.code} - Admin:${adminCoupon.usedCount} vs Page:${pageCoupon.usedCount}`);
+        }
+      });
+      
+    } catch (error) {
+      console.error(`   ❌ Erreur lecture ${page.name}:`, error);
+    }
+  });
+}
+
+/**
+ * DIAGNOSTIC 6 : Vérifier la communication entre pages
+ */
+private diagnosticCommunication(): void {
+  console.log('\n🔄 6. COMMUNICATION ENTRE PAGES');
+  console.log('-'.repeat(40));
+  
+  // Vérifier si les événements sont propagés
+  console.log('Test de propagation des événements:');
+  
+  // Écouter les réponses
+  const responseHandler = (event: any) => {
+    console.log(`   ✅ Réponse reçue de ${event.detail.source}:`, event.detail);
+  };
+  
+  window.addEventListener('diagnosticResponse', responseHandler);
+  
+  // Envoyer un diagnostic à toutes les pages
+  const diagnosticEvent = new CustomEvent('requestDiagnostic', {
+    detail: {
+      source: 'admin',
+      timestamp: new Date().toISOString(),
+      requestId: 'diag-' + Date.now()
+    }
+  });
+  
+  window.dispatchEvent(diagnosticEvent);
+  console.log('   📤 Demande de diagnostic envoyée à toutes les pages');
+  
+  // Attendre les réponses
+  setTimeout(() => {
+    window.removeEventListener('diagnosticResponse', responseHandler);
+    console.log('   ⏱️  Fin d\'attente des réponses');
+  }, 2000);
+}
+
+/**
+ * DIAGNOSTIC 7 : Afficher le résumé
+ */
+private afficherResumeDiagnostic(): void {
+  console.log('\n📋 RÉSUMÉ DU DIAGNOSTIC');
+  console.log('='.repeat(80));
+  
+  // 1. Vérifier les incohérences
+  let incoherences = 0;
+  let problemes = [];
+  
+  try {
+    // Vérifier les compteurs vs historique
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    
+    // Compter dans l'historique
+    const historyCounts: any = {};
+    history.forEach((h: any) => {
+      historyCounts[h.couponCode] = (historyCounts[h.couponCode] || 0) + 1;
+    });
+    
+    Object.keys(counters).forEach(code => {
+      if (historyCounts[code] !== counters[code]) {
+        incoherences++;
+        problemes.push(`Compteur ${code}: ${counters[code]} vs Historique: ${historyCounts[code] || 0}`);
+      }
+    });
+    
+    // Vérifier les coupons admin vs localStorage
+    this.coupons.forEach(coupon => {
+      const adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+      const storageCoupon = adminCoupons.find((c: any) => c.code === coupon.code);
+      
+      if (storageCoupon && storageCoupon.usedCount !== coupon.usedCount) {
+        incoherences++;
+        problemes.push(`Admin ${coupon.code}: Composant:${coupon.usedCount} vs Storage:${storageCoupon.usedCount}`);
+      }
+    });
+    
+    // Vérifier les utilisations en attente
+    const pending = JSON.parse(localStorage.getItem('pending_coupon_usages') || '[]');
+    if (pending.length > 0) {
+      problemes.push(`${pending.length} utilisation(s) en attente`);
+    }
+    
+  } catch (error) {
+    console.error('Erreur analyse résumé:', error);
+  }
+  
+  if (incoherences === 0 && problemes.length === 0) {
+    console.log('%c✅ TOUT EST COHÉRENT!', 'background: #10b981; color: white; padding: 5px;');
+  } else {
+    console.log(`%c⚠️ ${incoherences} incohérence(s) détectée(s)`, 'background: #f59e0b; color: white; padding: 5px;');
+    console.log('\nProblèmes détectés:');
+    problemes.forEach(p => console.log(`   • ${p}`));
+  }
+  
+  console.log('\n📌 RECOMMANDATIONS:');
+  if (incoherences > 0) {
+    console.log('   1. Exécutez resynchroniserTousLesCompteurs() pour corriger les incohérences');
+  }
+  if (JSON.parse(localStorage.getItem('pending_coupon_usages') || '[]').length > 0) {
+    console.log('   2. Exécutez traiterUtilisationsEnAttente() pour traiter les utilisations en attente');
+  }
+  
+  console.log('\n' + '='.repeat(80));
+}
+
+/**
+ * RESSYNCHRONISER tous les compteurs
+ */
+
+/**
+ * Mettre à jour les compteurs des pages à partir de l'historique
+ */
+private updatePageCouponCountersFromHistory(counts: any): void {
+  const pages = ['savonCoupons', 'huilesEssentiellesCoupons', 'huileOliveCoupons', 'soinCoupons'];
+  
+  pages.forEach(pageKey => {
+    try {
+      const coupons = JSON.parse(localStorage.getItem(pageKey) || '[]');
+      coupons.forEach((coupon: any) => {
+        if (counts[coupon.code] !== undefined) {
+          coupon.usedCount = counts[coupon.code];
+        }
+      });
+      localStorage.setItem(pageKey, JSON.stringify(coupons));
+    } catch (error) {
+      console.error(`Erreur mise à jour ${pageKey}:`, error);
+    }
+  });
+}
+
+/**
+ * Traiter les utilisations en attente
+ */
+traiterUtilisationsEnAttente(): void {
+  try {
+    const pending = JSON.parse(localStorage.getItem('pending_coupon_usages') || '[]');
+    
+    if (pending.length === 0) {
+      this.showAlert('Aucune utilisation en attente', 'info');
+      return;
+    }
+    
+    console.log(`📦 Traitement de ${pending.length} utilisation(s) en attente...`);
+    
+    pending.forEach((usage: any) => {
+      // Traiter chaque utilisation
+      this.incrementCouponUsageFromEvent(usage);
+    });
+    
+    // Vider la file d'attente
+    localStorage.removeItem('pending_coupon_usages');
+    
+    this.showAlert(`${pending.length} utilisation(s) traitée(s) avec succès`, 'success');
+    
+  } catch (error) {
+    console.error('❌ Erreur traitement attente:', error);
+    this.showAlert('Erreur lors du traitement', 'error');
+  }
+}
+// Dans admin.ts, vers la ligne 9860-9880 environ
+// Remplacez la méthode setupCouponUsageListener par ceci :
+
+/**
+ * Configuration des écouteurs d'événements pour les coupons
+ */
+
+/**
+ * Configuration des écouteurs d'événements pour les coupons
+ */
+private setupCouponUsageListener(): void {
+  console.log('👂 Configuration écouteur d\'utilisation des coupons...');
+  
+  // Écouter les événements personnalisés
+  window.addEventListener('couponUsed', (event: any) => {
+    console.log('🔔 Événement couponUsed reçu:', event.detail);
+    if (event.detail && event.detail.couponCode) {
+      this.incrementCouponUsageFromEvent(event.detail);
+    }
+  });
+  
+  window.addEventListener('newOrderReceived', (event: any) => {
+    console.log('📦 Événement newOrderReceived reçu:', event.detail);
+    if (event.detail && event.detail.couponCode) {
+      this.incrementCouponUsageFromEvent({
+        couponCode: event.detail.couponCode,
+        orderNumber: event.detail.orderNumber,
+        customerName: event.detail.customerName,
+        orderAmount: event.detail.totalAmount,
+        source: event.detail.source || 'unknown'
+      });
+    }
+  });
+  
+  // Vérifier périodiquement les nouvelles utilisations
+  setInterval(() => {
+    this.checkForPendingCouponUsages();
+  }, 5000);
+}
+
+/**
+ * Incrémente le compteur d'un coupon à partir d'un événement
+ */
+private incrementCouponUsageFromEvent(data: any): void {
+  console.log('📈 Traitement événement coupon:', data);
+  
+  const couponCode = data.couponCode;
+  if (!couponCode) return;
+  
+  // Chercher le coupon dans la liste locale
+  const couponIndex = this.coupons.findIndex(c => c.code === couponCode);
+  
+  if (couponIndex !== -1) {
+    // Incrémenter le compteur
+    const currentCount = this.coupons[couponIndex].usedCount || 0;
+    this.coupons[couponIndex].usedCount = currentCount + 1;
+    
+    console.log(`✅ Compteur mis à jour pour ${couponCode}: ${currentCount} → ${this.coupons[couponIndex].usedCount}`);
+    
+    // Sauvegarder dans localStorage
+    this.saveCouponCounters();
+    
+    // Mettre à jour l'affichage
+    this.coupons = [...this.coupons];
+    
+    // Afficher une notification
+    this.showAlert(`📊 Coupon ${couponCode} utilisé (${this.coupons[couponIndex].usedCount} utilisations)`, 'success');
+    
+    // Sauvegarder l'utilisation dans l'historique
+    this.saveCouponUsageToHistory(data);
+  } else {
+    console.warn(`⚠️ Coupon ${couponCode} non trouvé dans la liste locale`);
+    this.findAndUpdateCouponInStorage(couponCode, data);
+  }
+}
+
+/**
+ * Sauvegarde les compteurs de coupons dans localStorage
+ */
+
+
+/**
+ * Sauvegarde l'utilisation dans l'historique
+ */
+
+/**
+ * Cherche et met à jour un coupon dans localStorage
+ */
+private findAndUpdateCouponInStorage(couponCode: string, data: any): void {
+  try {
+    const adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    const couponIndex = adminCoupons.findIndex((c: any) => c.code === couponCode);
+    
+    if (couponIndex !== -1) {
+      const currentCount = adminCoupons[couponIndex].usedCount || 0;
+      adminCoupons[couponIndex].usedCount = currentCount + 1;
+      adminCoupons[couponIndex].lastUsedAt = new Date().toISOString();
+      
+      localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+      
+      this.coupons = adminCoupons;
+      
+      console.log(`✅ Coupon ${couponCode} mis à jour dans localStorage: ${currentCount} → ${adminCoupons[couponIndex].usedCount}`);
+      
+      this.updatePageCouponCounters(couponCode, adminCoupons[couponIndex].usedCount);
+      
+      this.showAlert(`📊 Coupon ${couponCode} mis à jour (${adminCoupons[couponIndex].usedCount} utilisations)`, 'success');
+    }
+  } catch (error) {
+    console.error('❌ Erreur recherche coupon dans storage:', error);
+  }
+}
+
+/**
+ * Met à jour les compteurs dans les pages spécifiques
+ */
+
+
+/**
+ * Vérifie les utilisations en attente
+ */
+
+/**
+ * Fonction de diagnostic pour les événements
+ */
+diagnosticEvenements(): void {
+  console.log('🔍 DIAGNOSTIC DES ÉVÉNEMENTS');
+  console.log('============================');
+  
+  // Vérifier les écouteurs d'événements
+  console.log('📋 Écouteurs configurés:');
+  console.log('- couponUsed: ✓');
+  console.log('- newOrderReceived: ✓');
+  console.log('- newSoinOrder: ✓');
+  console.log('- adminCouponsUpdated: ✓');
+  
+  // Vérifier les données dans localStorage
+  try {
+    const adminCoupons = localStorage.getItem('adminCoupons');
+    const couponCounters = localStorage.getItem('coupon_counters');
+    const usageHistory = localStorage.getItem('coupon_usage_history');
+    
+    console.log('📦 Données localStorage:');
+    console.log(`- adminCoupons: ${adminCoupons ? JSON.parse(adminCoupons).length : 0} coupons`);
+    console.log(`- coupon_counters: ${couponCounters ? Object.keys(JSON.parse(couponCounters)).length : 0} compteurs`);
+    console.log(`- usage_history: ${usageHistory ? JSON.parse(usageHistory).length : 0} entrées`);
+  } catch (error) {
+    console.error('❌ Erreur lecture localStorage:', error);
+  }
+  
+  // Afficher une notification
+  this.showAlert('Diagnostic terminé - Voir console (F12)', 'info');
+}
+// Dans AdminService
+incrementCouponUsageLocally(couponCode: string): void {
+  console.log(`📈 Incrémentation locale du coupon: ${couponCode}`);
+  
+  // Récupérer les coupons actuels
+  const coupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+  
+  // Trouver le coupon
+  const couponIndex = coupons.findIndex((c: any) => c.code === couponCode);
+  
+  if (couponIndex !== -1) {
+    // Incrémenter le compteur
+    coupons[couponIndex].usedCount = (coupons[couponIndex].usedCount || 0) + 1;
+    coupons[couponIndex].lastUsedAt = new Date().toISOString();
+    
+    // Sauvegarder
+    localStorage.setItem('adminCoupons', JSON.stringify(coupons));
+    
+    console.log(`✅ Nouveau compteur: ${coupons[couponIndex].usedCount}`);
+    
+    // Mettre à jour les compteurs séparés
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    counters[couponCode] = coupons[couponIndex].usedCount;
+    localStorage.setItem('coupon_counters', JSON.stringify(counters));
+    
+    // Émettre un événement
+    window.dispatchEvent(new CustomEvent('couponUsageUpdated', {
+      detail: { couponCode, usedCount: coupons[couponIndex].usedCount }
+    }));
+  } else {
+    console.warn(`⚠️ Coupon ${couponCode} non trouvé`);
+  }
+}
+// Dans AdminComponent
+simulateOrderWithCoupon(): void {
+  // Sélectionner un coupon aléatoire
+  const activeCoupons = this.coupons.filter(c => c.isActive && !this.isCouponExpired(c));
+  
+  if (activeCoupons.length === 0) {
+    this.showAlert('Aucun coupon actif disponible', 'warning');
+    return;
+  }
+  
+  const randomCoupon = activeCoupons[Math.floor(Math.random() * activeCoupons.length)];
+  const orderNumber = `SIM-${Date.now()}`;
+  const orderAmount = Math.floor(Math.random() * 200) + 50;
+  
+  // Calculer la réduction
+  let discountAmount = 0;
+  if (randomCoupon.discountType === 'PERCENTAGE') {
+    discountAmount = orderAmount * (randomCoupon.discountValue / 100);
+  } else {
+    discountAmount = Math.min(randomCoupon.discountValue, orderAmount);
+  }
+  
+  const finalAmount = orderAmount - discountAmount;
+  
+  console.log('🛒 Simulation commande:', {
+    coupon: randomCoupon.code,
+    orderNumber,
+    orderAmount,
+    discountAmount,
+    finalAmount
+  });
+  
+  // Incrémenter le compteur
+  this.incrementCouponCount(randomCoupon.code, {
+    orderNumber,
+    customerName: 'Client Test',
+    customerEmail: 'test@example.com',
+    orderAmount,
+    discountAmount
+  });
+  
+  this.showAlert(
+    `✅ Commande simulée avec ${randomCoupon.code} - ${this.formatCurrency(discountAmount)} économisés`,
+    'success'
+  );
+}
+
+
+
+
+
+forceReloadCoupons(): void {
+  this.loadCoupons();
+  setTimeout(() => {
+    this.showAlert(`📊 ${this.coupons.length} coupons chargés avec leurs compteurs`, 'success');
+  }, 1000);
+}
+/**
+ * 🔥 SOLUTION: Incrémenter les compteurs de coupons lors de la confirmation d'une commande
+ * À appeler dans confirmOrder() et processOrderConfirmation()
+ */
+private incrementCouponCountersFromOrder(order: CustomerOrder): void {
+  console.log('🎫 Vérification du coupon dans la commande:', order);
+  
+  // Vérifier si la commande a un coupon
+  if (!order.couponCode) {
+    console.log('ℹ️ Aucun coupon dans cette commande');
+    return;
+  }
+  
+  const couponCode = order.couponCode;
+  console.log(`✅ Coupon trouvé: ${couponCode}`);
+  
+  // 1. Mettre à jour le coupon dans la liste locale
+  const couponIndex = this.coupons.findIndex(c => c.code === couponCode);
+  
+  if (couponIndex !== -1) {
+    const currentCount = this.coupons[couponIndex].usedCount || 0;
+    this.coupons[couponIndex].usedCount = currentCount + 1;
+    
+    console.log(`📈 Compteur mis à jour: ${currentCount} → ${this.coupons[couponIndex].usedCount}`);
+    
+    // 2. Sauvegarder dans localStorage
+    this.saveCouponCounters();
+    
+    // 3. Sauvegarder l'historique
+    this.saveCouponUsageToHistory({
+      couponCode: couponCode,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      orderAmount: order.totalAmount,
+      discountAmount: order.discountAmount || 0,
+      source: order.source || 'unknown'
+    });
+    
+    // 4. Mettre à jour l'affichage
+    this.coupons = [...this.coupons];
+    
+    // 5. Synchroniser vers toutes les pages
+    setTimeout(() => {
+      this.syncCouponsToPages();
+    }, 100);
+    
+    this.showAlert(`🎟️ Coupon ${couponCode} utilisé (${this.coupons[couponIndex].usedCount} utilisations)`, 'success');
+  } else {
+    console.warn(`⚠️ Coupon ${couponCode} non trouvé dans la liste`);
+    
+    // Chercher dans le localStorage
+    this.findAndUpdateCouponInStorage(couponCode, {
+      couponCode: couponCode,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      orderAmount: order.totalAmount
+    });
+  }
+}
+
+/**
+ * 📝 Sauvegarde l'historique d'utilisation des coupons
+ */
+private saveCouponUsageToHistory(data: any): void {
+  try {
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    
+    history.push({
+      id: Date.now(),
+      couponCode: data.couponCode,
+      orderNumber: data.orderNumber || 'N/A',
+      customerName: data.customerName || 'Inconnu',
+      orderAmount: data.orderAmount || 0,
+      discountAmount: data.discountAmount || 0,
+      usedAt: new Date().toISOString(),
+      source: data.source || 'admin'
+    });
+    
+    localStorage.setItem('coupon_usage_history', JSON.stringify(history));
+    console.log('📝 Historique sauvegardé');
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde historique:', error);
+  }
+}
+
+/**
+ * 💾 Sauvegarde les compteurs de coupons
+ */
+private saveCouponCounters(): void {
+  try {
+    // Sauvegarder la liste complète
+    localStorage.setItem('adminCoupons', JSON.stringify(this.coupons));
+    
+    // Sauvegarder juste les compteurs
+    const counters: { [key: string]: number } = {};
+    this.coupons.forEach(c => {
+      counters[c.code] = c.usedCount || 0;
+    });
+    localStorage.setItem('coupon_counters', JSON.stringify(counters));
+    
+    console.log('💾 Compteurs sauvegardés');
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde:', error);
+  }
+}
+
+/**
+ * 🔄 Mettre à jour les statistiques des coupons dans l'interface
+ */
+public updateAllCouponStats(): void {
+  console.log('🔄 Mise à jour des statistiques coupons...');
+  
+  // Recharger l'historique
+  try {
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    const counters: { [key: string]: number } = {};
+    
+    history.forEach((h: any) => {
+      counters[h.couponCode] = (counters[h.couponCode] || 0) + 1;
+    });
+    
+    // Mettre à jour chaque coupon
+    this.coupons.forEach(coupon => {
+      if (counters[coupon.code] !== undefined) {
+        coupon.usedCount = counters[coupon.code];
+      }
+    });
+    
+    // Sauvegarder
+    localStorage.setItem('adminCoupons', JSON.stringify(this.coupons));
+    localStorage.setItem('coupon_counters', JSON.stringify(counters));
+    
+    // Forcer la mise à jour de l'affichage
+    this.coupons = [...this.coupons];
+    
+    console.log('✅ Statistiques coupons mises à jour');
+    this.showAlert('Statistiques coupons mises à jour', 'success');
+    
+  } catch (error) {
+    console.error('❌ Erreur mise à jour stats:', error);
+  }
+}
+// Dans AdminService, ajoutez cette méthode d'initialisation automatique
+
+/**
+ * Initialise le système de comptage automatique des coupons
+ * À appeler une seule fois au démarrage de l'application
+ */
+initializeAutoCouponCounting(): void {
+  console.log('🚀 INITIALISATION DU COMPTAGE AUTOMATIQUE DES COUPONS');
+  
+  // 1. Créer un écouteur global pour intercepter TOUTES les utilisations de coupons
+  this.setupGlobalCouponListener();
+  
+  // 2. Synchroniser avec l'historique existant
+  this.syncWithExistingHistory();
+  
+  // 3. Vérifier périodiquement les nouvelles utilisations
+  this.startPeriodicCheck();
+}
+
+/**
+ * Écouteur global pour TOUTES les utilisations de coupons
+ */
+private setupGlobalCouponListener(): void {
+  if (typeof window === 'undefined') return;
+  
+  // Écouter les événements personnalisés
+  window.addEventListener('coupon-used', (event: any) => {
+    console.log('🔔 Événement coupon-used capturé:', event.detail);
+    this.processCouponUsage(event.detail);
+  });
+  
+  // Écouter les nouvelles commandes
+  window.addEventListener('new-order', (event: any) => {
+    console.log('📦 Nouvelle commande détectée:', event.detail);
+    if (event.detail?.couponCode) {
+      this.processCouponUsage(event.detail);
+    }
+  });
+  
+  // Intercepter localStorage (solution de secours)
+  this.interceptLocalStorage();
+}
+
+/**
+ * Intercepter les modifications du localStorage
+ */
+private interceptLocalStorage(): void {
+  const originalSetItem = localStorage.setItem;
+  
+  localStorage.setItem = (key: string, value: string) => {
+    // Appeler la méthode originale
+    originalSetItem.call(localStorage, key, value);
+    
+    // Vérifier si c'est une commande avec coupon
+    if (key === 'admin_all_orders' || key.includes('order')) {
+      try {
+        const data = JSON.parse(value);
+        if (Array.isArray(data)) {
+          data.forEach(order => {
+            if (order.couponCode) {
+              this.processCouponUsage({
+                couponCode: order.couponCode,
+                orderNumber: order.orderNumber,
+                customerName: order.customerName,
+                orderAmount: order.totalAmount
+              });
+            }
+          });
+        }
+      } catch (e) {}
+    }
+  };
+}
+
+/**
+ * Synchroniser avec l'historique existant
+ */
+private syncWithExistingHistory(): void {
+  try {
+    // Lire TOUS les coupons dans le localStorage
+    const allCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    const allOrders = JSON.parse(localStorage.getItem('admin_all_orders') || '[]');
+    
+    console.log(`📊 Analyse de ${allOrders.length} commandes et ${allCoupons.length} coupons...`);
+    
+    // Compter les utilisations par coupon
+    const usageCounts: { [key: string]: number } = {};
+    
+    allOrders.forEach((order: any) => {
+      if (order.couponCode) {
+        usageCounts[order.couponCode] = (usageCounts[order.couponCode] || 0) + 1;
+      }
+    });
+    
+    // Lire l'historique existant
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    history.forEach((h: any) => {
+      if (h.couponCode) {
+        usageCounts[h.couponCode] = Math.max(
+          usageCounts[h.couponCode] || 0,
+          h.count || 1
+        );
+      }
+    });
+    
+    console.log('📈 Compteurs calculés:', usageCounts);
+    
+    // Mettre à jour TOUS les coupons
+    this.updateAllCouponCounters(usageCounts);
+    
+  } catch (error) {
+    console.error('❌ Erreur synchronisation:', error);
+  }
+}
+
+/**
+ * Mettre à jour TOUS les compteurs de coupons
+ */
+private updateAllCouponCounters(counts: { [key: string]: number }): void {
+  try {
+    // 1. Mettre à jour adminCoupons
+    const adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    let updated = false;
+    
+    adminCoupons.forEach((coupon: any) => {
+      if (counts[coupon.code] !== undefined && coupon.usedCount !== counts[coupon.code]) {
+        coupon.usedCount = counts[coupon.code];
+        updated = true;
+      }
+    });
+    
+    if (updated) {
+      localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+    }
+    
+    // 2. Mettre à jour les compteurs
+    localStorage.setItem('coupon_counters', JSON.stringify(counts));
+    
+    // 3. Mettre à jour TOUTES les pages
+    ['savonCoupons', 'huilesEssentiellesCoupons', 'huileOliveCoupons', 'soinCoupons'].forEach(page => {
+      try {
+        const pageCoupons = JSON.parse(localStorage.getItem(page) || '[]');
+        let pageUpdated = false;
+        
+        pageCoupons.forEach((coupon: any) => {
+          if (counts[coupon.code] !== undefined) {
+            coupon.usedCount = counts[coupon.code];
+            pageUpdated = true;
+          }
+        });
+        
+        if (pageUpdated) {
+          localStorage.setItem(page, JSON.stringify(pageCoupons));
+        }
+      } catch (e) {}
+    });
+    
+    // 4. Émettre des événements
+    this.emitUpdateEvents();
+    
+  } catch (error) {
+    console.error('❌ Erreur mise à jour compteurs:', error);
+  }
+}
+
+/**
+ * Traiter une utilisation de coupon
+ */
+private processCouponUsage(data: any): void {
+  if (!data?.couponCode) return;
+  
+  const couponCode = data.couponCode;
+  console.log(`🔄 Traitement automatique: ${couponCode}`);
+  
+  try {
+    // 1. Mettre à jour adminCoupons
+    const adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    const couponIndex = adminCoupons.findIndex((c: any) => c.code === couponCode);
+    
+    if (couponIndex !== -1) {
+      const currentCount = adminCoupons[couponIndex].usedCount || 0;
+      adminCoupons[couponIndex].usedCount = currentCount + 1;
+      adminCoupons[couponIndex].lastUsedAt = new Date().toISOString();
+      
+      localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+      console.log(`✅ ${couponCode}: ${currentCount} → ${adminCoupons[couponIndex].usedCount}`);
+    }
+    
+    // 2. Mettre à jour les compteurs
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    counters[couponCode] = (counters[couponCode] || 0) + 1;
+    localStorage.setItem('coupon_counters', JSON.stringify(counters));
+    
+    // 3. Ajouter à l'historique
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    history.push({
+      couponCode: couponCode,
+      orderNumber: data.orderNumber || 'N/A',
+      customerName: data.customerName || 'Inconnu',
+      orderAmount: data.orderAmount || 0,
+      usedAt: new Date().toISOString(),
+      source: data.source || 'auto'
+    });
+    localStorage.setItem('coupon_usage_history', JSON.stringify(history));
+    
+    // 4. Mettre à jour les pages
+    this.updatePageCounters(couponCode, counters[couponCode]);
+    
+    // 5. Émettre un événement
+    this.emitUpdateEvents();
+    
+  } catch (error) {
+    console.error('❌ Erreur traitement:', error);
+  }
+}
+
+/**
+ * Mettre à jour les compteurs des pages
+ */
+
+
+/**
+ * Émettre des événements de mise à jour
+ */
+private emitUpdateEvents(): void {
+  if (typeof window === 'undefined') return;
+  
+  window.dispatchEvent(new Event('adminCouponsUpdated'));
+  window.dispatchEvent(new Event('savonCouponsUpdated'));
+  window.dispatchEvent(new Event('huilesEssentiellesCouponsUpdated'));
+  window.dispatchEvent(new Event('huileOliveCouponsUpdated'));
+  window.dispatchEvent(new Event('soinCouponsUpdated'));
+}
+
+/**
+ * Vérification périodique
+ */
+private startPeriodicCheck(): void {
+  setInterval(() => {
+    this.checkForNewUsages();
+  }, 5000); // Toutes les 5 secondes
+}
+
+/**
+ * Vérifier les nouvelles utilisations
+ */
+private checkForNewUsages(): void {
+  try {
+    // Vérifier les commandes récentes
+    const allOrders = JSON.parse(localStorage.getItem('admin_all_orders') || '[]');
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    
+    allOrders.forEach((order: any) => {
+      if (order.couponCode && order.status === 'CONFIRMED') {
+        const currentCount = counters[order.couponCode] || 0;
+        const orderCount = 1; // Chaque commande = 1 utilisation
+        
+        // Vérifier si ce n'est pas déjà compté
+        const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+        const alreadyCounted = history.some((h: any) => 
+          h.orderNumber === order.orderNumber && h.couponCode === order.couponCode
+        );
+        
+        if (!alreadyCounted) {
+          this.processCouponUsage({
+            couponCode: order.couponCode,
+            orderNumber: order.orderNumber,
+            customerName: order.customerName,
+            orderAmount: order.totalAmount,
+            source: 'periodic-check'
+          });
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Erreur vérification périodique:', error);
+  }
+}
+// Dans AdminComponent, modifier ngOnInit :
+
+
+
+private incrementLocalCouponUsage(couponCode: string, orderData?: any): void {
+  console.log(`📈 Incrémentation locale du coupon: ${couponCode}`);
+  
+  try {
+    // 1. Mettre à jour dans le composant
+    const couponIndex = this.coupons.findIndex(c => c.code === couponCode);
+    
+    if (couponIndex !== -1) {
+      const currentCount = this.coupons[couponIndex].usedCount || 0;
+      this.coupons[couponIndex].usedCount = currentCount + 1;
+      console.log(`✅ Composant: ${currentCount} → ${this.coupons[couponIndex].usedCount}`);
+    }
+    
+    // 2. Mettre à jour dans localStorage
+    const adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    const storageIndex = adminCoupons.findIndex((c: any) => c.code === couponCode);
+    
+    if (storageIndex !== -1) {
+      const currentStorage = adminCoupons[storageIndex].usedCount || 0;
+      adminCoupons[storageIndex].usedCount = currentStorage + 1;
+      localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+    }
+    
+    // 3. Mettre à jour les compteurs
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    counters[couponCode] = (counters[couponCode] || 0) + 1;
+    localStorage.setItem('coupon_counters', JSON.stringify(counters));
+    
+    // 4. Ajouter à l'historique
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    history.push({
+      couponCode: couponCode,
+      orderNumber: orderData?.orderNumber || 'N/A',
+      customerName: orderData?.customerName || 'Inconnu',
+      usedAt: new Date().toISOString()
+    });
+    localStorage.setItem('coupon_usage_history', JSON.stringify(history));
+    
+    // 5. Forcer la mise à jour
+    this.coupons = [...this.coupons];
+    
+    // 6. Afficher notification
+    const newCount = this.coupons.find(c => c.code === couponCode)?.usedCount || 0;
+    this.showAlert(`📊 ${couponCode}: ${newCount} utilisations`, 'success');
+    
+  } catch (error) {
+    console.error('❌ Erreur incrémentation:', error);
+  }
+}
+
+/**
+ * ✅ MÉTHODE CORRIGÉE DANS AdminService
+ * Utiliser un coupon et incrémenter le compteur
+ */
+
+/**
+ * Met à jour les compteurs dans les pages spécifiques
+ */
+
+/**
+ * ✅ MÉTHODE À APPELER LORS DE LA CONFIRMATION D'UNE COMMANDE
+ * Dans AdminComponent, dans confirmOrder() ou processOrderConfirmation()
+ */
+private incrementCouponFromOrder(order: CustomerOrder): void {
+  if (!order.couponCode) {
+    console.log('ℹ️ Aucun coupon dans cette commande');
+    return;
+  }
+  
+  console.log(`🎫 Traitement du coupon ${order.couponCode} depuis la commande ${order.orderNumber}`);
+  
+  // Récupérer les coupons admin
+  const adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+  const couponIndex = adminCoupons.findIndex((c: any) => c.code === order.couponCode);
+  
+  if (couponIndex !== -1) {
+    const currentCount = adminCoupons[couponIndex].usedCount || 0;
+    const newCount = currentCount + 1;
+    
+    // Mettre à jour
+    adminCoupons[couponIndex].usedCount = newCount;
+    adminCoupons[couponIndex].lastUsedAt = new Date().toISOString();
+    
+    // Sauvegarder
+    localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+    
+    // Mettre à jour les compteurs
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    counters[order.couponCode] = (counters[order.couponCode] || 0) + 1;
+    localStorage.setItem('coupon_counters', JSON.stringify(counters));
+    
+    // Ajouter à l'historique
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    history.push({
+      couponCode: order.couponCode,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      orderAmount: order.totalAmount,
+      discountAmount: order.discountAmount || 0,
+      usedAt: new Date().toISOString(),
+      source: order.source || 'unknown'
+    });
+    localStorage.setItem('coupon_usage_history', JSON.stringify(history));
+    
+    // Mettre à jour les coupons dans le composant
+    const localIndex = this.coupons.findIndex(c => c.code === order.couponCode);
+    if (localIndex !== -1) {
+      this.coupons[localIndex].usedCount = newCount;
+      this.coupons = [...this.coupons];
+    }
+    
+    // Mettre à jour les pages
+    this.updatePageCouponCounters(order.couponCode, newCount);
+    
+    // Émettre les événements
+    this.emitCouponUpdateEvents(order.couponCode, newCount);
+    
+    console.log(`✅ Compteur incrémenté: ${currentCount} → ${newCount}`);
+    this.showAlert(`📊 Coupon ${order.couponCode} utilisé (${newCount} utilisations)`, 'success');
+    
+  } else {
+    console.warn(`⚠️ Coupon ${order.couponCode} non trouvé dans adminCoupons`);
+    
+    // Créer le coupon s'il n'existe pas
+    adminCoupons.push({
+      code: order.couponCode,
+      usedCount: 1,
+      lastUsedAt: new Date().toISOString(),
+      isActive: true,
+      discountValue: 10,
+      discountType: 'PERCENTAGE'
+    });
+    localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+    console.log(`✅ Nouveau coupon créé: ${order.couponCode}`);
+  }
+}
+
+/**
+ * Met à jour les compteurs des pages
+ */
+
+/**
+ * Émet des événements de mise à jour
+ */
+
+/**
+ * ✅ MÉTHODE PRINCIPALE POUR INCRÉMENTER UN COUPON
+ * À appeler quand une commande avec coupon est confirmée
+ */
+
+/**
+ * ✅ Confirmer une commande et incrémenter le coupon si présent
+ */
+
+/**
+ * ✅ Confirmer une commande et incrémenter automatiquement le coupon
+ */
+
+/**
+ * Synchroniser les coupons vers toutes les pages
+ */
+syncCouponsToPages(): void {
+  console.log('🔄 Synchronisation des coupons vers les pages...');
+  
+  // Sauvegarder tous les coupons dans adminCoupons
+  localStorage.setItem('adminCoupons', JSON.stringify(this.coupons));
+  
+  // Filtrer les coupons actifs
+  const activeCoupons = this.coupons.filter(coupon => 
+    coupon.isActive && !this.isCouponExpired(coupon)
+  );
+  
+  // Distribuer aux différentes pages
+  const savonCoupons: Coupon[] = [];
+  const huilesCoupons: Coupon[] = [];
+  const oliveCoupons: Coupon[] = [];
+  const soinCoupons: Coupon[] = [];
+  
+  activeCoupons.forEach(coupon => {
+    // Si coupon universel (pas de produits spécifiques)
+    if (!coupon.applicableProducts || coupon.applicableProducts.length === 0) {
+      savonCoupons.push(coupon);
+      huilesCoupons.push(coupon);
+      oliveCoupons.push(coupon);
+      soinCoupons.push(coupon);
+      return;
+    }
+    
+    // Vérifier les produits applicables
+    let hasSavon = false;
+    let hasHuiles = false;
+    let hasOlive = false;
+    let hasSoin = false;
+    
+    coupon.applicableProducts.forEach(productId => {
+      const product = this.products.find(p => p.id === productId);
+      if (product) {
+        if (this.isSavonProduct(product)) hasSavon = true;
+        if (this.isHuilesEssentiellesProduct(product)) hasHuiles = true;
+        if (this.isHuileOliveProduct(product)) hasOlive = true;
+        if (this.isSoinProduct(product)) hasSoin = true;
+      }
+    });
+    
+    if (hasSavon) savonCoupons.push(coupon);
+    if (hasHuiles) huilesCoupons.push(coupon);
+    if (hasOlive) oliveCoupons.push(coupon);
+    if (hasSoin) soinCoupons.push(coupon);
+  });
+  
+  // Sauvegarder dans localStorage
+  localStorage.setItem('savonCoupons', JSON.stringify(savonCoupons));
+  localStorage.setItem('huilesEssentiellesCoupons', JSON.stringify(huilesCoupons));
+  localStorage.setItem('huileOliveCoupons', JSON.stringify(oliveCoupons));
+  localStorage.setItem('soinCoupons', JSON.stringify(soinCoupons));
+  
+  // Émettre des événements
+  window.dispatchEvent(new Event('savonCouponsUpdated'));
+  window.dispatchEvent(new Event('huilesEssentiellesCouponsUpdated'));
+  window.dispatchEvent(new Event('huileOliveCouponsUpdated'));
+  window.dispatchEvent(new Event('soinCouponsUpdated'));
+  
+  this.showAlert(`${activeCoupons.length} coupons synchronisés vers les pages`, 'success');
+}
+
+/**
+ * Confirmer une commande
+ */
+
+
+/**
+ * Expédier une commande
+ */
+shipOrder(order: CustomerOrder | string): void {
+  console.log('🚚 Expédition commande:', order);
+  
+  let targetOrder: CustomerOrder | undefined;
+  
+  if (typeof order === 'string') {
+    targetOrder = this.orders.find(o => o.orderNumber === order);
+  } else {
+    targetOrder = order;
+  }
+  
+  if (!targetOrder) {
+    this.showAlert('Commande non trouvée', 'error');
+    return;
+  }
+  
+  if (targetOrder.status !== 'CONFIRMED') {
+    this.showAlert('La commande doit être confirmée avant d\'être expédiée', 'warning');
+    return;
+  }
+  
+  const trackingNumber = prompt('Entrez le numéro de suivi (optionnel):');
+  if (trackingNumber === null) return;
+  
+  targetOrder.status = 'SHIPPED';
+  targetOrder.trackingNumber = trackingNumber || '';
+  targetOrder.updatedAt = new Date().toISOString();
+  
+  this.updateOrderInStorage(targetOrder);
+  this.updateOrderInList(targetOrder);
+  
+  this.showAlert(`Commande #${targetOrder.orderNumber} marquée comme expédiée!`, 'success');
+}
+
+/**
+ * Sauvegarder un coupon
+ */
+
+/**
+ * Mettre à jour la commande dans la liste affichée
+ */
+
+/**
+ * Incrémenter le compteur d'un coupon
+ */
+
+/**
+ * Marquer tous les champs d'un formulaire comme touchés
+ */
+
+// ==================== MÉTHODES CORRIGÉES POUR LES COUPONS ====================
+
+/**
+ * ✅ Charge les coupons depuis l'API et synchronise avec les compteurs locaux
+ */
+// Dans AdminComponent - REMPLACEZ la méthode confirmOrder existante
+
+/**
+ * ✅ Incrémente le compteur d'un coupon
+ * À appeler quand une commande avec coupon est confirmée
+ */
+
+
+/**
+ * ✅ Met à jour les compteurs dans toutes les pages
+ */
+
+
+/**
+ * ✅ Émet des événements pour mettre à jour l'interface
+ */
+
+/**
+ * ✅ Récupère l'historique des utilisations d'un coupon
+ */
+getCouponUsageHistory(couponCode?: string): any[] {
+  try {
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    
+    if (couponCode) {
+      return history.filter((h: any) => h.couponCode === couponCode)
+        .sort((a: any, b: any) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime());
+    }
+    
+    return history.sort((a: any, b: any) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime());
+  } catch (error) {
+    console.error('❌ Erreur récupération historique:', error);
+    return [];
+  }
+}
+
+/**
+ * ✅ Obtient les statistiques détaillées d'un coupon
+ */
+getCouponDetailedStats(couponCode: string): any {
+  const history = this.getCouponUsageHistory(couponCode);
+  const coupon = this.coupons.find(c => c.code === couponCode);
+  
+  const totalUses = history.length;
+  const totalDiscount = history.reduce((sum, h) => sum + (h.discountAmount || 0), 0);
+  const uniqueCustomers = new Set(history.map(h => h.customerEmail)).size;
+  
+  // Commandes avec ce coupon
+  const allOrders = JSON.parse(localStorage.getItem('admin_all_orders') || '[]');
+  const ordersWithCoupon = allOrders.filter((o: any) => o.couponCode === couponCode);
+  const confirmedOrders = ordersWithCoupon.filter((o: any) => 
+    o.status === 'CONFIRMED' || o.status === 'DELIVERED'
+  ).length;
+  
+  return {
+    couponCode,
+    coupon: coupon,
+    totalUses: totalUses,
+    totalDiscount: totalDiscount,
+    averageDiscount: totalUses > 0 ? totalDiscount / totalUses : 0,
+    uniqueCustomers: uniqueCustomers,
+    firstUse: history.length > 0 ? history[history.length - 1].usedAt : null,
+    lastUse: history.length > 0 ? history[0].usedAt : null,
+    ordersWithCoupon: ordersWithCoupon.length,
+    confirmedOrders: confirmedOrders,
+    usageHistory: history.slice(0, 10) // 10 dernières utilisations
+  };
+}
+
+/**
+ * ✅ Réinitialise tous les compteurs de coupons
+ */
+resetAllCouponCounters(): void {
+  if (!confirm('⚠️ Êtes-vous sûr de vouloir réinitialiser TOUS les compteurs de coupons à 0 ?')) {
+    return;
+  }
+  
+  console.log('🔄 Réinitialisation de tous les compteurs...');
+  
+  try {
+    // Mettre à jour les coupons dans le composant
+    this.coupons.forEach(coupon => {
+      coupon.usedCount = 0;
+    });
+    
+    // Mettre à jour adminCoupons
+    localStorage.setItem('adminCoupons', JSON.stringify(this.coupons));
+    
+    // Vider les compteurs
+    localStorage.setItem('coupon_counters', JSON.stringify({}));
+    
+    // Vider l'historique
+    localStorage.setItem('coupon_usage_history', JSON.stringify([]));
+    
+    // Mettre à jour les pages
+    this.syncCouponsToPages();
+    
+    // Forcer la mise à jour de l'affichage
+    this.coupons = [...this.coupons];
+    
+    this.showAlert('✅ Tous les compteurs ont été réinitialisés', 'success');
+    
+  } catch (error) {
+    console.error('❌ Erreur réinitialisation:', error);
+    this.showAlert('Erreur lors de la réinitialisation', 'error');
+  }
+}
+
+/**
+ * ✅ Resynchronise tous les compteurs à partir de l'historique
+ */
+
+
+/**
+ * ✅ Vérifie les utilisations en attente
+ */
+
+
+/**
+ * ✅ Force la mise à jour de tous les compteurs
+ */
+
+/**
+ * ✅ Teste manuellement l'incrémentation d'un coupon
+ */
+testIncrementNow(couponCode: string): void {
+  console.log(`🧪 TEST MANUEL: Incrémentation de ${couponCode}`);
+  
+  // Trouver le coupon
+  const couponIndex = this.coupons.findIndex(c => c.code === couponCode);
+  if (couponIndex === -1) {
+    this.showAlert(`Coupon ${couponCode} non trouvé!`, 'error');
+    return;
+  }
+  
+  // Incrémenter
+  this.incrementCouponUsage(couponCode, {
+    orderNumber: `TEST-${Date.now()}`,
+    customerName: 'Test Manuel',
+    customerEmail: 'test@example.com',
+    orderAmount: 100,
+    discountAmount: 20,
+    source: 'test'
+  });
+  
+  this.showAlert(`✅ Test d'incrémentation lancé pour ${couponCode}`, 'success');
+}
+
+/**
+ * ✅ Ouvre le détail d'une commande
+ */
+openOrderDetail(order: CustomerOrder | null): void {
+  console.log('📋 Ouverture détail commande:', order);
+  
+  if (!order) {
+    // Nouvelle commande
+    this.selectedOrder = {
+      id: Date.now(),
+      orderNumber: `CMD-${Date.now()}`,
+      customerName: '',
+      customerEmail: '',
+      status: 'PENDING',
+      orderDate: new Date().toISOString(),
+      subtotal: 0,
+      shippingCost: 0,
+      totalAmount: 0,
+      orderItems: [],
+      source: 'MANUAL',
+      isTemporary: true
+    } as CustomerOrder;
+  } else {
+    // Commande existante
+    this.selectedOrder = { ...order };
+    
+    // Garantir un ID valide
+    if (!this.selectedOrder.id || this.selectedOrder.id <= 0) {
+      this.selectedOrder.id = this.extractOrGenerateOrderId(this.selectedOrder);
+    }
+  }
+  
+  // Mettre à jour le formulaire
+  this.orderStatusForm.patchValue({
+    status: this.selectedOrder.status,
+    trackingNumber: this.selectedOrder.trackingNumber || '',
+    notes: this.selectedOrder.notes || ''
+  });
+  
+  this.modals.orderDetail = true;
+}
+
+/**
+ * ✅ Extrait ou génère un ID pour une commande
+ */
+private extractOrGenerateOrderId(order: CustomerOrder): number {
+  // 1. Extraire de l'orderNumber
+  if (order.orderNumber) {
+    const match = order.orderNumber.match(/\d+/g);
+    if (match && match.length > 0) {
+      const extractedId = parseInt(match.join(''), 10);
+      if (!isNaN(extractedId) && extractedId > 0) {
+        return extractedId;
+      }
+    }
+  }
+  
+  // 2. Générer basé sur le timestamp
+  return Date.now() + Math.floor(Math.random() * 1000);
+}
+
+/**
+ * ✅ Met à jour une commande dans le stockage
+ */
+private updateOrderInStorage(order: CustomerOrder): void {
+  try {
+    const allOrders = JSON.parse(localStorage.getItem('admin_all_orders') || '[]');
+    const existingIndex = allOrders.findIndex((o: any) => o.orderNumber === order.orderNumber);
+    
+    if (existingIndex !== -1) {
+      allOrders[existingIndex] = { ...order, lastUpdate: new Date().toISOString() };
+    } else {
+      allOrders.unshift({ ...order, synchronizedAt: new Date().toISOString() });
+    }
+    
+    localStorage.setItem('admin_all_orders', JSON.stringify(allOrders));
+    console.log('💾 Commande sauvegardée dans le stockage');
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde stockage:', error);
+  }
+}
+
+/**
+ * ✅ Met à jour la commande dans la liste affichée
+ */
+private updateOrderInList(updatedOrder: CustomerOrder): void {
+  const index = this.orders.findIndex(o => o.orderNumber === updatedOrder.orderNumber);
+  if (index !== -1) {
+    this.orders[index] = { ...updatedOrder };
+  } else {
+    this.orders.unshift(updatedOrder);
+  }
+  this.orders = [...this.orders];
+}
+
+/**
+ * ✅ Charge les coupons (déjà défini plus haut)
+ */
+
+
+/**
+ * ✅ Sauvegarde un coupon
+ */
+saveCoupon(): void {
+  if (this.couponForm.invalid) {
+    this.showAlert('Veuillez corriger les erreurs du formulaire', 'warning');
+    this.markFormGroupTouched(this.couponForm);
+    return;
+  }
+
+  console.log('🎫 Sauvegarde coupon...');
+  this.loading.action = true;
+  
+  const formatDateForBackend = (dateString: string): string => {
+    if (!dateString || dateString.trim() === '') return '';
+    if (dateString.length === 10 && dateString.includes('-')) {
+      return `${dateString}T00:00:00`;
+    }
+    return dateString;
+  };
+
+  const couponData = this.couponForm.value;
+  
+  const couponToSave: any = {
+    code: couponData.code,
+    discountValue: couponData.discountValue,
+    discountType: couponData.discountType,
+    expiryDate: formatDateForBackend(couponData.expiryDate),
+    isActive: couponData.isActive !== undefined ? couponData.isActive : true,
+    applicableProducts: this.selectedCouponProducts || []
+  };
+
+  if (couponData.description) couponToSave.description = couponData.description;
+  if (couponData.maxUses && couponData.maxUses > 0) couponToSave.maxUses = couponData.maxUses;
+  if (couponData.minOrderAmount && couponData.minOrderAmount > 0) couponToSave.minOrderAmount = couponData.minOrderAmount;
+  if (couponData.startDate && couponData.startDate.trim() !== '') {
+    couponToSave.startDate = formatDateForBackend(couponData.startDate);
+  }
+  if (couponData.discountExtra !== undefined) couponToSave.discountExtra = couponData.discountExtra;
+  if (couponData.freeShipping !== undefined) couponToSave.freeShipping = couponData.freeShipping;
+
+  const observable = this.selectedCoupon
+    ? this.adminService.updateCoupon(this.selectedCoupon.id, couponToSave)
+    : this.adminService.createCoupon(couponToSave);
+
+  observable.subscribe({
+    next: (response: ApiResponse<Coupon>) => {
+      if (response.success) {
+        const action = this.selectedCoupon ? 'modifié' : 'créé';
+        this.showAlert(`Coupon ${action} avec succès`, 'success');
+        this.modals.coupon = false;
+        this.loadCoupons();
+        setTimeout(() => this.syncCouponsToPages(), 100);
+      } else {
+        this.showAlert(response.message || 'Erreur lors de la sauvegarde', 'error');
+      }
+      this.loading.action = false;
+    },
+    error: (error) => {
+      console.error('❌ Erreur sauvegarde coupon:', error);
+      this.showAlert('Erreur lors de la sauvegarde', 'error');
+      this.loading.action = false;
+    }
+  });
+}
+
+/**
+ * ✅ Marque tous les champs d'un formulaire comme touchés
+ */
+private markFormGroupTouched(formGroup: FormGroup): void {
+  Object.keys(formGroup.controls).forEach(key => {
+    const control = formGroup.get(key);
+    if (control instanceof FormGroup) {
+      this.markFormGroupTouched(control);
+    } else {
+      control?.markAsTouched();
+    }
+  });
+}
+// Méthode à ajouter dans AdminComponent pour remplacer le pipe filterByEmail
+getOrdersByCustomerEmail(email: string): CustomerOrder[] {
+  if (!email) return [];
+  return this.orders.filter(order => 
+    order.customerEmail.toLowerCase() === email.toLowerCase()
+  );
+}
+/**
+ * Obtient la date et heure courante formatée
+ */
+getCurrentDateTime(): string {
+  return new Date().toISOString();
+}
+
+// Dans AdminComponent, ajoutez ces méthodes :
+
+/**
+ * Calcule le total des utilisations de coupons
+ */
+calculateTotalCouponUses(): number {
+  return this.coupons.reduce((total, coupon) => total + (coupon.usedCount || 0), 0);
+}
+
+/**
+ * Récupère les commandes d'un client spécifique
+ */
+getCustomerOrders(customerId: number): CustomerOrder[] {
+  const customer = this.customers.find(c => c.id === customerId);
+  if (!customer) return [];
+  
+  return this.orders
+    .filter(order => order.customerEmail?.toLowerCase() === customer.email?.toLowerCase())
+    .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
+}
+// ==================== MÉTHODE POUR INCRÉMENTER LE COMPTEUR DE COUPON ====================
+
+/**
+ * ✅ INCRÉMENTE LE COMPTEUR D'UTILISATIONS D'UN COUPON
+ * Cette méthode doit être appelée automatiquement quand une commande avec coupon est confirmée
+ * @param couponCode Code du coupon à incrémenter
+ * @param orderData Données de la commande pour l'historique (optionnel)
+ */
+
+private updateAllPagesCouponCounters(couponCode: string, newCount: number): void {
+  const pages = [
+    { key: 'savonCoupons', event: 'savonCouponsUpdated' },
+    { key: 'huilesEssentiellesCoupons', event: 'huilesEssentiellesCouponsUpdated' },
+    { key: 'huileOliveCoupons', event: 'huileOliveCouponsUpdated' },
+    { key: 'soinCoupons', event: 'soinCouponsUpdated' }
+  ];
+  
+  pages.forEach(page => {
+    try {
+      const pageCoupons = JSON.parse(localStorage.getItem(page.key) || '[]');
+      const index = pageCoupons.findIndex((c: any) => c.code === couponCode);
+      
+      if (index !== -1) {
+        pageCoupons[index].usedCount = newCount;
+        pageCoupons[index].lastUsedAt = new Date().toISOString();
+        localStorage.setItem(page.key, JSON.stringify(pageCoupons));
+        console.log(`✅ Page ${page.key} mise à jour: ${couponCode} = ${newCount} utilisations`);
+        
+        // Émettre un événement spécifique à cette page
+        window.dispatchEvent(new Event(page.event));
+      }
+    } catch (error) {
+      console.error(`❌ Erreur mise à jour ${page.key}:`, error);
+    }
+  });
+}
+
+/**
+ * ✅ ÉMET DES ÉVÉNEMENTS POUR METTRE À JOUR TOUTES LES INTERFACES
+ * @param couponCode Code du coupon
+ * @param newCount Nouveau compteur
+ */
+private emitCouponUpdateEvents(couponCode: string, newCount: number): void {
+  // Événement général pour l'admin
+  window.dispatchEvent(new CustomEvent('adminCouponsUpdated', {
+    detail: { 
+      couponCode, 
+      newCount, 
+      timestamp: new Date().toISOString() 
+    }
+  }));
+  
+  // Événements spécifiques aux pages
+  window.dispatchEvent(new Event('savonCouponsUpdated'));
+  window.dispatchEvent(new Event('huilesEssentiellesCouponsUpdated'));
+  window.dispatchEvent(new Event('huileOliveCouponsUpdated'));
+  window.dispatchEvent(new Event('soinCouponsUpdated'));
+  
+  console.log(`📢 Événements émis pour ${couponCode}`);
+}
+
+/**
+ * ✅ VERSION CORRIGÉE DE confirmOrder AVEC INCRÉMENTATION AUTOMATIQUE DU COUPON
+ * À remplacer dans votre code existant
+ */
+confirmOrder(order: CustomerOrder | string): void {
+  console.log('📦 Confirmation commande avec gestion automatique du coupon');
+  
+  // Récupérer la commande
+  let targetOrder: CustomerOrder | undefined;
+  
+  if (typeof order === 'string') {
+    targetOrder = this.orders.find(o => o.orderNumber === order);
+    if (!targetOrder) {
+      // Chercher dans le localStorage
+      const allOrders = JSON.parse(localStorage.getItem('admin_all_orders') || '[]');
+      targetOrder = allOrders.find((o: any) => o.orderNumber === order);
+    }
+  } else {
+    targetOrder = order;
+  }
+  
+  if (!targetOrder) {
+    this.showAlert('Commande non trouvée', 'error');
+    return;
+  }
+  
+  // ✅ VÉRIFIER SI LA COMMANDE A UN COUPON
+  if (targetOrder.couponCode) {
+    console.log(`🎫 COUPON DÉTECTÉ: ${targetOrder.couponCode} dans la commande ${targetOrder.orderNumber}`);
+    
+    // INCRÉMENTER LE COMPTEUR DU COUPON AUTOMATIQUEMENT
+    this.incrementCouponUsage(targetOrder.couponCode, {
+      orderNumber: targetOrder.orderNumber,
+      customerName: targetOrder.customerName,
+      customerEmail: targetOrder.customerEmail,
+      orderAmount: targetOrder.totalAmount,
+      discountAmount: targetOrder.discountAmount || 0,
+      source: targetOrder.source || 'unknown'
+    });
+  } else {
+    console.log('ℹ️ Aucun coupon dans cette commande');
+  }
+  
+  // Mettre à jour le statut de la commande
+  targetOrder.status = 'CONFIRMED';
+  targetOrder.updatedAt = new Date().toISOString();
+  
+  // Sauvegarder la commande mise à jour
+  this.updateOrderInStorage(targetOrder);
+  this.updateOrderInList(targetOrder);
+  
+  this.showAlert(`Commande #${targetOrder.orderNumber} confirmée avec succès!`, 'success');
+}
+
+/**
+ * ✅ MÉTHODE POUR TESTER MANUELLEMENT L'INCRÉMENTATION D'UN COUPON
+ * @param couponCode Code du coupon à tester
+ */
+testIncrementCoupon(couponCode: string): void {
+  console.log(`🧪 TEST MANUEL: Incrémentation de ${couponCode}`);
+  
+  // Vérifier si le coupon existe
+  const couponExists = this.coupons.some(c => c.code === couponCode);
+  
+  if (!couponExists) {
+    if (!confirm(`Le coupon ${couponCode} n'existe pas. Voulez-vous le créer ?`)) {
+      return;
+    }
+  }
+  
+  // Générer un numéro de commande de test
+  const testOrderNumber = `TEST-${Date.now()}`;
+  
+  // Incrémenter le coupon
+  this.incrementCouponUsage(couponCode, {
+    orderNumber: testOrderNumber,
+    customerName: 'Client Test',
+    customerEmail: 'test@example.com',
+    orderAmount: 100,
+    discountAmount: 20,
+    source: 'test'
+  });
+  
+  this.showAlert(`✅ Test d'incrémentation lancé pour ${couponCode}`, 'success');
+}
+
+/**
+ * ✅ MÉTHODE POUR AFFICHER L'HISTORIQUE D'UN COUPON
+ * @param couponCode Code du coupon (optionnel)
+ */
+showCouponHistory(couponCode?: string): void {
+  try {
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    
+    let filteredHistory = history;
+    if (couponCode) {
+      filteredHistory = history.filter((h: any) => h.couponCode === couponCode);
+    }
+    
+    if (filteredHistory.length === 0) {
+      this.showAlert(`Aucun historique pour ${couponCode || 'tous les coupons'}`, 'info');
+      return;
+    }
+    
+    // Trier du plus récent au plus ancien
+    filteredHistory.sort((a: any, b: any) => 
+      new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime()
+    );
+    
+    console.log(`📜 HISTORIQUE DES UTILISATIONS ${couponCode ? 'pour ' + couponCode : ''}:`);
+    console.log('='.repeat(80));
+    
+    filteredHistory.slice(0, 10).forEach((h: any, index: number) => {
+      console.log(`${index + 1}. ${h.couponCode} - Commande ${h.orderNumber} - ${new Date(h.usedAt).toLocaleString()}`);
+      console.log(`   Client: ${h.customerName} - Montant: ${h.orderAmount}€ - Réduction: ${h.discountAmount}€`);
+      console.log(`   Nouveau compteur: ${h.newCount}`);
+      console.log('---');
+    });
+    
+    // Compter par coupon
+    const counts: any = {};
+    history.forEach((h: any) => {
+      counts[h.couponCode] = (counts[h.couponCode] || 0) + 1;
+    });
+    
+    console.log('\n📊 RÉSUMÉ:');
+    Object.keys(counts).forEach(code => {
+      console.log(`   ${code}: ${counts[code]} utilisations`);
+    });
+    
+    this.showAlert(`📊 ${filteredHistory.length} utilisation(s) affichées dans la console`, 'info');
+    
+  } catch (error) {
+    console.error('❌ Erreur affichage historique:', error);
+  }
+}
+
+/**
+ * ✅ MÉTHODE POUR RESYNCHRONISER TOUS LES COMPTEURS À PARTIR DE L'HISTORIQUE
+ */
+resynchroniserTousLesCompteurs(): void {
+  console.log('🔄 Resynchronisation de tous les compteurs de coupons...');
+  
+  try {
+    // Récupérer l'historique
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    
+    // Compter les utilisations par coupon
+    const counts: { [key: string]: number } = {};
+    history.forEach((h: any) => {
+      // Utiliser soit le newCount stocké, soit compter
+      if (h.newCount !== undefined) {
+        counts[h.couponCode] = Math.max(counts[h.couponCode] || 0, h.newCount);
+      } else {
+        counts[h.couponCode] = (counts[h.couponCode] || 0) + 1;
+      }
+    });
+    
+    console.log('📊 Compteurs calculés depuis l\'historique:', counts);
+    
+    // Mettre à jour adminCoupons
+    const adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    adminCoupons.forEach((coupon: any) => {
+      if (counts[coupon.code] !== undefined) {
+        coupon.usedCount = counts[coupon.code];
+      }
+    });
+    localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+    
+    // Mettre à jour les compteurs
+    localStorage.setItem('coupon_counters', JSON.stringify(counts));
+    
+    // Mettre à jour le composant
+    this.coupons.forEach(coupon => {
+      if (counts[coupon.code] !== undefined) {
+        coupon.usedCount = counts[coupon.code];
+      }
+    });
+    
+    // Forcer la mise à jour de l'affichage
+    this.coupons = [...this.coupons];
+    
+    // Mettre à jour toutes les pages
+    Object.keys(counts).forEach(code => {
+      this.updateAllPagesCouponCounters(code, counts[code]);
+    });
+    
+    this.showAlert(`✅ ${Object.keys(counts).length} coupons resynchronisés`, 'success');
+    
+  } catch (error) {
+    console.error('❌ Erreur resynchronisation:', error);
+    this.showAlert('Erreur lors de la resynchronisation', 'error');
+  }
+}
+// ==================== MÉTHODE CORRIGÉE POUR INCRÉMENTER LE COMPTEUR ====================
+
+/**
+ * ✅ INCRÉMENTE LE COMPTEUR D'UTILISATIONS D'UN COUPON - VERSION CORRIGÉE
+ */
+incrementCouponCount(couponCode: string, orderData?: any): void {
+  console.log(`📈 INCRÉMENTATION DU COUPON: ${couponCode}`, orderData);
+  
+  if (!couponCode) {
+    console.warn('⚠️ Code coupon vide');
+    return;
+  }
+
+  try {
+    // 1. Lire les coupons depuis localStorage
+    let adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    console.log('📊 Coupons avant:', adminCoupons.map((c: any) => ({code: c.code, used: c.usedCount})));
+
+    // 2. Trouver le coupon
+    let couponIndex = adminCoupons.findIndex((c: any) => c.code === couponCode);
+    
+    if (couponIndex === -1) {
+      console.log(`⚠️ Coupon ${couponCode} non trouvé - recherche dans le composant...`);
+      
+      // Chercher dans le composant
+      const compCoupon = this.coupons.find(c => c.code === couponCode);
+      
+      if (compCoupon) {
+        adminCoupons.push({
+          ...compCoupon,
+          usedCount: (compCoupon.usedCount || 0) + 1,
+          lastUsedAt: new Date().toISOString()
+        });
+        console.log(`✅ Coupon ajouté depuis composant`);
+      } else {
+        // Créer un nouveau coupon
+        adminCoupons.push({
+          id: Date.now(),
+          code: couponCode,
+          usedCount: 1,
+          discountValue: 10,
+          discountType: 'PERCENTAGE',
+          expiryDate: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
+          isActive: true,
+          maxUses: 100,
+          lastUsedAt: new Date().toISOString()
+        });
+        console.log(`✅ Nouveau coupon créé`);
+      }
+      
+      // Mettre à jour localStorage
+      localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+      
+      // Recharger les coupons
+      setTimeout(() => {
+        this.loadCoupons();
+        this.showAlert(`✅ Coupon ${couponCode} créé avec 1 utilisation`, 'success');
+      }, 100);
+      
+      return;
+    }
+    
+    // 3. INCRÉMENTER LE COMPTEUR
+    const currentCount = adminCoupons[couponIndex].usedCount || 0;
+    const newCount = currentCount + 1;
+    
+    // Vérifier la limite maxUses
+    const maxUses = adminCoupons[couponIndex].maxUses;
+    if (maxUses && newCount > maxUses) {
+      this.showAlert(`⚠️ Coupon ${couponCode} a atteint sa limite (${maxUses})`, 'warning');
+      return;
+    }
+    
+    // Mettre à jour
+    adminCoupons[couponIndex].usedCount = newCount;
+    adminCoupons[couponIndex].lastUsedAt = new Date().toISOString();
+    
+    console.log(`✅ Compteur mis à jour: ${currentCount} → ${newCount}`);
+    
+    // 4. SAUVEGARDER DANS LOCALSTORAGE
+    localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+    
+    // 5. METTRE À JOUR LES COMPTEURS SÉPARÉS
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    counters[couponCode] = newCount;
+    localStorage.setItem('coupon_counters', JSON.stringify(counters));
+    
+    // 6. AJOUTER À L'HISTORIQUE
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    history.push({
+      id: Date.now(),
+      couponCode: couponCode,
+      orderNumber: orderData?.orderNumber || `CMD-${Date.now()}`,
+      customerName: orderData?.customerName || 'Client Test',
+      customerEmail: orderData?.customerEmail || '',
+      orderAmount: orderData?.orderAmount || 100,
+      discountAmount: orderData?.discountAmount || 10,
+      usedAt: new Date().toISOString(),
+      oldCount: currentCount,
+      newCount: newCount,
+      source: orderData?.source || 'admin'
+    });
+    localStorage.setItem('coupon_usage_history', JSON.stringify(history));
+    
+    // 7. METTRE À JOUR LE COMPOSANT LOCAL
+    const localIndex = this.coupons.findIndex(c => c.code === couponCode);
+    if (localIndex !== -1) {
+      this.coupons[localIndex].usedCount = newCount;
+      this.coupons = [...this.coupons]; // Force update
+    } else {
+      this.coupons = [...adminCoupons];
+    }
+    
+    // 8. METTRE À JOUR LES PAGES SPÉCIFIQUES
+    this.updatePageCounters(couponCode, newCount);
+    
+    // 9. ÉMETTRE DES ÉVÉNEMENTS
+    window.dispatchEvent(new CustomEvent('couponUpdated', {
+      detail: { couponCode, newCount }
+    }));
+    
+    // 10. AFFICHER NOTIFICATION
+    this.showAlert(`📊 ${couponCode}: ${newCount}/${maxUses || '∞'} utilisations`, 'success');
+    
+    console.log('📊 Coupons après:', adminCoupons.map((c: any) => ({code: c.code, used: c.usedCount})));
+    
+  } catch (error) {
+    console.error('❌ Erreur:', error);
+  }
+}
+
+/**
+ * Met à jour les compteurs des pages spécifiques
+ */
+// Dans AdminComponent - REMPLACEZ la méthode loadCoupons existante
+loadCoupons(): void {
+  console.log('🎫 Chargement coupons...');
+  this.loading.coupons = true;
+  
+  this.adminService.getAllCoupons().pipe(takeUntil(this.destroy$)).subscribe({
+    next: (response: any) => {
+      if (response.success && response.coupons) {
+        // Récupérer les compteurs locaux
+        const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+        const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+        
+        // Compter depuis l'historique (plus fiable)
+        const historyCounts: { [key: string]: number } = {};
+        history.forEach((h: any) => {
+          historyCounts[h.couponCode] = (historyCounts[h.couponCode] || 0) + 1;
+        });
+        
+        this.coupons = response.coupons.map((coupon: Coupon) => {
+          // Priorité à l'historique, puis aux compteurs, puis à la valeur API
+          let usedCount = coupon.usedCount || 0;
+          
+          if (historyCounts[coupon.code] !== undefined) {
+            usedCount = historyCounts[coupon.code];
+          } else if (counters[coupon.code] !== undefined) {
+            usedCount = counters[coupon.code];
+          }
+          
+          return {
+            ...coupon,
+            usedCount: usedCount
+          };
+        });
+        
+        console.log(`✅ ${this.coupons.length} coupons chargés avec leurs compteurs`);
+        
+        // Sauvegarder dans localStorage
+        localStorage.setItem('adminCoupons', JSON.stringify(this.coupons));
+        
+        // Mettre à jour les compteurs
+        const newCounters: { [key: string]: number } = {};
+        this.coupons.forEach(c => {
+          newCounters[c.code] = c.usedCount || 0;
+        });
+        localStorage.setItem('coupon_counters', JSON.stringify(newCounters));
+        
+        // Synchroniser vers les pages
+        this.syncCouponsToPages();
+      }
+      this.loading.coupons = false;
+    },
+    error: (error) => {
+      console.error('❌ Erreur coupons:', error);
+      this.loading.coupons = false;
+    }
+  });
+}
+// Dans AdminService - REMPLACEZ la méthode existante
+useCoupon(couponCode: string, orderAmount: number = 0, orderData?: any): Observable<ApiResponse<any>> {
+  console.log(`🎫 UTILISATION DU COUPON: ${couponCode}`, orderData);
+  
+  // 1. Incrémenter LOCALEMENT immédiatement
+  try {
+    // Récupérer les coupons admin
+    const adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    const couponIndex = adminCoupons.findIndex((c: any) => c.code === couponCode);
+    
+    if (couponIndex !== -1) {
+      const currentCount = adminCoupons[couponIndex].usedCount || 0;
+      const newCount = currentCount + 1;
+      
+      // Mettre à jour le coupon
+      adminCoupons[couponIndex].usedCount = newCount;
+      adminCoupons[couponIndex].lastUsedAt = new Date().toISOString();
+      
+      // Sauvegarder dans localStorage
+      localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+      
+      console.log(`✅ Compteur incrémenté dans adminCoupons: ${currentCount} → ${newCount}`);
+      
+      // 2. Mettre à jour les compteurs séparés
+      const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+      counters[couponCode] = (counters[couponCode] || 0) + 1;
+      localStorage.setItem('coupon_counters', JSON.stringify(counters));
+      
+      // 3. Ajouter à l'historique des utilisations
+      const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+      history.push({
+        couponCode: couponCode,
+        orderNumber: orderData?.orderNumber || 'N/A',
+        customerName: orderData?.customerName || 'Client inconnu',
+        customerEmail: orderData?.customerEmail || '',
+        orderAmount: orderAmount,
+        discountAmount: orderData?.discountAmount || 0,
+        usedAt: new Date().toISOString(),
+        source: orderData?.source || 'unknown'
+      });
+      localStorage.setItem('coupon_usage_history', JSON.stringify(history));
+      
+      // 4. Mettre à jour les coupons spécifiques aux pages
+      this.updatePageCouponCounters(couponCode, newCount);
+      
+      // 5. Émettre des événements pour mettre à jour toutes les interfaces
+      this.emitCouponUpdateEvents(couponCode, newCount);
+      
+    } else {
+      console.warn(`⚠️ Coupon ${couponCode} non trouvé dans adminCoupons`);
+      
+      // Créer une entrée si elle n'existe pas
+      adminCoupons.push({
+        code: couponCode,
+        usedCount: 1,
+        lastUsedAt: new Date().toISOString(),
+        isActive: true,
+        discountValue: orderData?.discountValue || 10,
+        discountType: 'PERCENTAGE'
+      });
+      localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+      console.log(`✅ Nouveau coupon créé: ${couponCode}`);
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur incrémentation locale:', error);
+  }
+  
+  // 6. Appel API (en arrière-plan, ne bloque pas)
+  return this.http.post<ApiResponse<any>>(`${this.apiUrl}/coupons/use`, {
+    code: couponCode,
+    orderAmount: orderAmount,
+    orderNumber: orderData?.orderNumber,
+    customerEmail: orderData?.customerEmail
+  }).pipe(
+    tap(response => {
+      console.log('✅ Réponse API useCoupon:', response);
+    }),
+    catchError((error) => {
+      console.warn('⚠️ API useCoupon non disponible (mais compteur déjà incrémenté localement):', error);
+      // Retourner un succès même si l'API échoue
+      const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+      return of({
+        success: true,
+        message: 'Coupon utilisé localement',
+        data: { 
+          usedCount: counters[couponCode] || 1,
+          localOnly: true 
+        }
+      } as ApiResponse<any>);
+    })
+  );
+}
+// Dans AdminComponent - AJOUTEZ cette méthode
+/**
+ * ✅ INCRÉMENTE LE COMPTEUR D'UTILISATIONS D'UN COUPON
+ * Cette méthode doit être appelée automatiquement quand une commande avec coupon est confirmée
+ */
+incrementCouponUsage(couponCode: string, orderData?: any): void {
+  console.log(`📈 INCRÉMENTATION DU COUPON: ${couponCode}`, orderData);
+  
+  if (!couponCode) {
+    console.warn('⚠️ Code coupon vide');
+    return;
+  }
+
+  try {
+    // 1. Lire les coupons depuis localStorage
+    let adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    console.log('📊 Coupons avant:', adminCoupons.map((c: any) => ({code: c.code, used: c.usedCount})));
+
+    // 2. Trouver le coupon
+    let couponIndex = adminCoupons.findIndex((c: any) => c.code === couponCode);
+    
+    if (couponIndex === -1) {
+      console.log(`⚠️ Coupon ${couponCode} non trouvé - recherche dans le composant...`);
+      
+      // Chercher dans le composant
+      const compCoupon = this.coupons.find(c => c.code === couponCode);
+      
+      if (compCoupon) {
+        adminCoupons.push({
+          ...compCoupon,
+          usedCount: (compCoupon.usedCount || 0) + 1,
+          lastUsedAt: new Date().toISOString()
+        });
+        console.log(`✅ Coupon ajouté depuis composant`);
+      } else {
+        // Créer un nouveau coupon
+        adminCoupons.push({
+          id: Date.now(),
+          code: couponCode,
+          usedCount: 1,
+          discountValue: 10,
+          discountType: 'PERCENTAGE',
+          expiryDate: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
+          isActive: true,
+          maxUses: 100,
+          lastUsedAt: new Date().toISOString()
+        });
+        console.log(`✅ Nouveau coupon créé`);
+      }
+      
+      // Mettre à jour localStorage
+      localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+      
+      // Recharger les coupons
+      setTimeout(() => {
+        this.loadCoupons();
+        this.showAlert(`✅ Coupon ${couponCode} créé avec 1 utilisation`, 'success');
+      }, 100);
+      
+      return;
+    }
+    
+    // 3. INCRÉMENTER LE COMPTEUR
+    const currentCount = adminCoupons[couponIndex].usedCount || 0;
+    const newCount = currentCount + 1;
+    
+    // Vérifier la limite maxUses
+    const maxUses = adminCoupons[couponIndex].maxUses;
+    if (maxUses && newCount > maxUses) {
+      this.showAlert(`⚠️ Coupon ${couponCode} a atteint sa limite (${maxUses})`, 'warning');
+      return;
+    }
+    
+    // Mettre à jour
+    adminCoupons[couponIndex].usedCount = newCount;
+    adminCoupons[couponIndex].lastUsedAt = new Date().toISOString();
+    
+    console.log(`✅ Compteur mis à jour: ${currentCount} → ${newCount}`);
+    
+    // 4. SAUVEGARDER DANS LOCALSTORAGE
+    localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+    
+    // 5. METTRE À JOUR LES COMPTEURS SÉPARÉS
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    counters[couponCode] = newCount;
+    localStorage.setItem('coupon_counters', JSON.stringify(counters));
+    
+    // 6. AJOUTER À L'HISTORIQUE
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    history.push({
+      id: Date.now(),
+      couponCode: couponCode,
+      orderNumber: orderData?.orderNumber || `CMD-${Date.now()}`,
+      customerName: orderData?.customerName || 'Client Test',
+      customerEmail: orderData?.customerEmail || '',
+      orderAmount: orderData?.orderAmount || 100,
+      discountAmount: orderData?.discountAmount || 10,
+      usedAt: new Date().toISOString(),
+      oldCount: currentCount,
+      newCount: newCount,
+      source: orderData?.source || 'admin'
+    });
+    localStorage.setItem('coupon_usage_history', JSON.stringify(history));
+    
+    // 7. METTRE À JOUR LE COMPOSANT LOCAL
+    const localIndex = this.coupons.findIndex(c => c.code === couponCode);
+    if (localIndex !== -1) {
+      this.coupons[localIndex].usedCount = newCount;
+      this.coupons = [...this.coupons]; // Force update
+    } else {
+      this.coupons = [...adminCoupons];
+    }
+    
+    // 8. METTRE À JOUR LES PAGES SPÉCIFIQUES
+    this.updatePageCounters(couponCode, newCount);
+    
+    // 9. ÉMETTRE DES ÉVÉNEMENTS
+    window.dispatchEvent(new CustomEvent('couponUpdated', {
+      detail: { couponCode, newCount }
+    }));
+    
+    // 10. AFFICHER NOTIFICATION
+    this.showAlert(`📊 ${couponCode}: ${newCount}/${maxUses || '∞'} utilisations`, 'success');
+    
+    console.log('📊 Coupons après:', adminCoupons.map((c: any) => ({code: c.code, used: c.usedCount})));
+    
+  } catch (error) {
+    console.error('❌ Erreur:', error);
+  }
+}
+// Dans AdminComponent - AJOUTEZ cette méthode
+/**
+ * Met à jour les compteurs des pages spécifiques
+ */
+private updatePageCounters(couponCode: string, newCount: number): void {
+  const pages = ['savonCoupons', 'huilesEssentiellesCoupons', 'huileOliveCoupons', 'soinCoupons'];
+  
+  pages.forEach(pageKey => {
+    try {
+      const pageCoupons = JSON.parse(localStorage.getItem(pageKey) || '[]');
+      const index = pageCoupons.findIndex((c: any) => c.code === couponCode);
+      
+      if (index !== -1) {
+        pageCoupons[index].usedCount = newCount;
+        localStorage.setItem(pageKey, JSON.stringify(pageCoupons));
+      }
+    } catch (e) {}
+  });
+}
+ngOnInit() {
+  console.log('🚀 INITIALISATION DU COMPOSANT ADMIN');
+  
+  // 1. Vérifier l'authentification
+  this.checkAuthentication();
+  
+  // 2. Tester l'API
+  this.testApiConnection();
+  
+  // 3. Configurer les écouteurs
+  this.setupEventListeners();
+  this.setupAutoCouponSync();
+  this.setupCouponUsageListener();
+  this.setupSoinOrderListener();
+  
+  // 4. ✅ ÉCOUTER LES MISES À JOUR DE COUPONS DEPUIS LES AUTRES PAGES
+  window.addEventListener('adminCouponsUpdated', (event: any) => {
+    console.log('🔔 adminCouponsUpdated reçu:', event.detail);
+    if (event.detail && event.detail.couponCode) {
+      this.syncCouponFromEvent(event.detail);
+    }
+  });
+  
+  // 5. ✅ ÉCOUTER LES ÉVÉNEMENTS DE MISES À JOUR DES COUPONS
+  window.addEventListener('couponUsed', (event: any) => {
+    console.log('🔔 couponUsed reçu:', event.detail);
+    if (event.detail && event.detail.couponCode) {
+      this.syncCouponFromEvent(event.detail);
+    }
+  });
+  
+  // 6. ✅ ÉCOUTER LES NOUVELLES COMMANDES
+  window.addEventListener('newOrderReceived', (event: any) => {
+    console.log('📦 newOrderReceived reçu:', event.detail);
+    if (event.detail && event.detail.couponCode) {
+      this.syncCouponFromEvent({
+        couponCode: event.detail.couponCode,
+        newCount: event.detail.couponNewCount || (event.detail.couponCount || 0) + 1,
+        timestamp: new Date().toISOString(),
+        source: event.detail.source || 'order'
+      });
+    }
+  });
+  
+  // 7. Synchronisation initiale
+  setTimeout(() => {
+    this.forceRefreshAllCounters();
+    this.loadCoupons();
+  }, 2000);
+}
+/**
+ * ✅ SYNCHRONISE UN COUPON DEPUIS UN ÉVÉNEMENT
+ */
+
+
+/**
+ * ✅ SAUVEGARDE UN COUPON DANS LOCALSTORAGE
+ */
+private saveCouponToLocalStorage(couponCode: string, newCount: number, detail: any): void {
+  try {
+    // Mettre à jour adminCoupons
+    const adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    const couponIndex = adminCoupons.findIndex((c: any) => c.code === couponCode);
+    
+    if (couponIndex !== -1) {
+      adminCoupons[couponIndex].usedCount = newCount;
+      adminCoupons[couponIndex].lastUsedAt = detail.timestamp || new Date().toISOString();
+    } else {
+      adminCoupons.push({
+        code: couponCode,
+        usedCount: newCount,
+        lastUsedAt: detail.timestamp || new Date().toISOString(),
+        isActive: true,
+        discountValue: 10,
+        discountType: 'PERCENTAGE'
+      });
+    }
+    
+    localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+    console.log(`💾 adminCoupons mis à jour: ${couponCode} = ${newCount}`);
+    
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde localStorage:', error);
+  }
+}
+
+/**
+ * ✅ MET À JOUR LES COMPTEURS DE COUPONS
+ */
+private updateCouponCounters(couponCode: string, newCount: number): void {
+  try {
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    counters[couponCode] = newCount;
+    localStorage.setItem('coupon_counters', JSON.stringify(counters));
+    console.log(`💾 Compteurs mis à jour: ${couponCode} = ${newCount}`);
+  } catch (error) {
+    console.error('❌ Erreur mise à jour compteurs:', error);
+  }
+}
+
+/**
+ * ✅ AJOUTE À L'HISTORIQUE DES UTILISATIONS
+ */
+private addToCouponHistory(couponCode: string, newCount: number, detail: any): void {
+  try {
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    
+    history.push({
+      id: Date.now(),
+      couponCode: couponCode,
+      orderNumber: detail.orderNumber || `SYNC-${Date.now()}`,
+      customerName: detail.customerName || 'Client inconnu',
+      customerEmail: detail.customerEmail || '',
+      orderAmount: detail.orderAmount || 0,
+      discountAmount: detail.discountAmount || 0,
+      usedAt: detail.timestamp || new Date().toISOString(),
+      oldCount: (detail.oldCount !== undefined) ? detail.oldCount : (newCount - 1),
+      newCount: newCount,
+      source: detail.source || 'admin-sync'
+    });
+    
+    localStorage.setItem('coupon_usage_history', JSON.stringify(history));
+    console.log(`📜 Historique mis à jour pour ${couponCode}`);
+    
+  } catch (error) {
+    console.error('❌ Erreur ajout historique:', error);
+  }
+}
+
+/**
+ * ✅ MET À JOUR LES COMPTEURS DES PAGES SPÉCIFIQUES
+ */
+private updatePageCouponCounters(couponCode: string, newCount: number): void {
+  const pages = [
+    { key: 'savonCoupons', event: 'savonCouponsUpdated' },
+    { key: 'huilesEssentiellesCoupons', event: 'huilesEssentiellesCouponsUpdated' },
+    { key: 'huileOliveCoupons', event: 'huileOliveCouponsUpdated' },
+    { key: 'soinCoupons', event: 'soinCouponsUpdated' }
+  ];
+  
+  pages.forEach(page => {
+    try {
+      const pageCoupons = JSON.parse(localStorage.getItem(page.key) || '[]');
+      const index = pageCoupons.findIndex((c: any) => c.code === couponCode);
+      
+      if (index !== -1) {
+        pageCoupons[index].usedCount = newCount;
+        pageCoupons[index].lastUsedAt = new Date().toISOString();
+        localStorage.setItem(page.key, JSON.stringify(pageCoupons));
+        console.log(`✅ Page ${page.key} mise à jour: ${couponCode} = ${newCount}`);
+        
+        // Émettre un événement pour cette page
+        window.dispatchEvent(new Event(page.event));
+      }
+    } catch (error) {
+      console.error(`❌ Erreur mise à jour ${page.key}:`, error);
+    }
+  });
+}
+
+/**
+ * ✅ FORCE LA MISE À JOUR DE L'AFFICHAGE DES COUPONS
+ */
+
+
+/**
+ * ✅ FORCE LA MISE À JOUR DE TOUS LES COMPTEURS
+ */
+forceRefreshAllCounters(): void {
+  console.log('🔄 RAFRAÎCHISSEMENT FORCÉ DE TOUS LES COMPTEURS');
+  
+  try {
+    // 1. Récupérer toutes les commandes
+    const allOrders = JSON.parse(localStorage.getItem('admin_all_orders') || '[]');
+    
+    // 2. Compter les utilisations depuis les commandes
+    const usageCounts: { [key: string]: number } = {};
+    
+    allOrders.forEach((order: any) => {
+      if (order.couponCode && (order.status === 'CONFIRMED' || order.status === 'DELIVERED')) {
+        usageCounts[order.couponCode] = (usageCounts[order.couponCode] || 0) + 1;
+      }
+    });
+    
+    // 3. Compter depuis l'historique
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    history.forEach((h: any) => {
+      if (h.newCount !== undefined) {
+        usageCounts[h.couponCode] = Math.max(usageCounts[h.couponCode] || 0, h.newCount);
+      } else {
+        usageCounts[h.couponCode] = (usageCounts[h.couponCode] || 0) + 1;
+      }
+    });
+    
+    // 4. Compter depuis les compteurs
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    Object.keys(counters).forEach(code => {
+      usageCounts[code] = Math.max(usageCounts[code] || 0, counters[code]);
+    });
+    
+    console.log('📊 Compteurs calculés:', usageCounts);
+    
+    // 5. Mettre à jour les coupons dans le composant
+    let updatedCount = 0;
+    this.coupons.forEach(coupon => {
+      if (usageCounts[coupon.code] !== undefined && coupon.usedCount !== usageCounts[coupon.code]) {
+        console.log(`   ${coupon.code}: ${coupon.usedCount} → ${usageCounts[coupon.code]}`);
+        coupon.usedCount = usageCounts[coupon.code];
+        updatedCount++;
+      }
+    });
+    
+    // 6. Sauvegarder dans localStorage
+    localStorage.setItem('adminCoupons', JSON.stringify(this.coupons));
+    localStorage.setItem('coupon_counters', JSON.stringify(usageCounts));
+    
+    // 7. Forcer la mise à jour de l'affichage
+    this.coupons = [...this.coupons];
+    
+    // 8. Mettre à jour toutes les pages
+    Object.keys(usageCounts).forEach(code => {
+      this.updatePageCouponCounters(code, usageCounts[code]);
+    });
+    
+    // 9. Émettre un événement global
+    window.dispatchEvent(new CustomEvent('allCouponsRefreshed', {
+      detail: {
+        counts: usageCounts,
+        timestamp: new Date().toISOString()
+      }
+    }));
+    
+    if (updatedCount > 0) {
+      this.showAlert(`✅ ${updatedCount} coupon(s) mis à jour`, 'success');
+    } else {
+      this.showAlert('Tous les compteurs sont à jour', 'info');
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur refresh:', error);
+    this.showAlert('Erreur lors du rafraîchissement', 'error');
+  }
+}
+
+/**
+ * ✅ VÉRIFIE LES UTILISATIONS EN ATTENTE
+ */
+private checkForPendingCouponUsages(): void {
+  try {
+    const pending = JSON.parse(localStorage.getItem('pending_coupon_usages') || '[]');
+    
+    if (pending.length > 0) {
+      console.log(`📦 ${pending.length} utilisation(s) en attente trouvée(s)`);
+      
+      pending.forEach((usage: any) => {
+        this.syncCouponFromEvent({
+          couponCode: usage.couponCode,
+          newCount: usage.newCount,
+          orderNumber: usage.orderNumber,
+          customerName: usage.customerName,
+          timestamp: usage.timestamp,
+          source: usage.source || 'pending'
+        });
+      });
+      
+      // Vider la file d'attente
+      localStorage.removeItem('pending_coupon_usages');
+      
+      if (pending.length > 0) {
+        this.showAlert(`${pending.length} utilisation(s) en attente traitées`, 'success');
+      }
+    }
+  } catch (error) {
+    console.error('❌ Erreur vérification utilisations en attente:', error);
+  }
+}
+
+/**
+ * ✅ DIAGNOSTIC COMPLET DES COUPONS
+ */
+diagnosticCompletCoupons(): void {
+  console.log('%c🔍 DIAGNOSTIC COMPLET DES COUPONS', 'background: #4f46e5; color: white; font-size: 16px; padding: 10px;');
+  console.log('='.repeat(80));
+  
+  // 1. Vérifier les coupons dans le composant
+  console.log('\n📋 COUPONS DANS LE COMPOSANT:');
+  this.coupons.forEach(c => {
+    console.log(`   ${c.code}: ${c.usedCount || 0} utilisations`);
+  });
+  
+  // 2. Vérifier adminCoupons dans localStorage
+  const adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+  console.log('\n💾 ADMIN COUPONS DANS LOCALSTORAGE:');
+  adminCoupons.forEach((c: any) => {
+    console.log(`   ${c.code}: ${c.usedCount || 0} utilisations`);
+  });
+  
+  // 3. Vérifier les compteurs
+  const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+  console.log('\n🔢 COMPTEURS:');
+  Object.keys(counters).forEach(code => {
+    console.log(`   ${code}: ${counters[code]} utilisations`);
+  });
+  
+  // 4. Vérifier l'historique
+  const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+  console.log(`\n📜 HISTORIQUE (${history.length} entrées):`);
+  history.slice(-10).forEach((h: any, i: number) => {
+    console.log(`   ${i+1}. ${h.couponCode} - ${h.source || 'inconnu'} - ${h.newCount || h.count} utilisations`);
+  });
+  
+  // 5. Vérifier les pages spécifiques
+  const pages = ['savonCoupons', 'huilesEssentiellesCoupons', 'huileOliveCoupons', 'soinCoupons'];
+  console.log('\n🌐 PAGES SPÉCIFIQUES:');
+  pages.forEach(page => {
+    const coupons = JSON.parse(localStorage.getItem(page) || '[]');
+    console.log(`   ${page}: ${coupons.length} coupons`);
+    coupons.slice(0, 3).forEach((c: any) => {
+      console.log(`      - ${c.code}: ${c.usedCount || 0} utilisations`);
+    });
+  });
+  
+  console.log('\n' + '='.repeat(80));
+  this.showAlert('Diagnostic terminé - Voir console (F12)', 'info');
+}
+/**
+ * ✅ SYNCHRONISE UN COUPON DEPUIS UN ÉVÉNEMENT (Version simplifiée)
+ */
+private syncCouponFromEvent(detail: any): void {
+  console.log(`🔄 Synchronisation coupon ${detail.couponCode}`);
+  
+  if (!detail.couponCode) {
+    console.warn('⚠️ Événement sans code coupon');
+    return;
+  }
+  
+  // Trouver le coupon dans la liste locale
+  const couponIndex = this.coupons.findIndex(c => c.code === detail.couponCode);
+  
+  if (couponIndex !== -1) {
+    const oldCount = this.coupons[couponIndex].usedCount || 0;
+    const newCount = oldCount + 1;
+    
+    // Mettre à jour le coupon
+    this.coupons[couponIndex].usedCount = newCount;
+    
+    console.log(`✅ Coupon ${detail.couponCode}: ${oldCount} → ${newCount}`);
+    
+    // Mettre à jour l'affichage
+    this.coupons = [...this.coupons];
+    
+    // Sauvegarder dans localStorage
+    const adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+    const adminIndex = adminCoupons.findIndex((c: any) => c.code === detail.couponCode);
+    
+    if (adminIndex !== -1) {
+      adminCoupons[adminIndex].usedCount = newCount;
+    } else {
+      adminCoupons.push({
+        code: detail.couponCode,
+        usedCount: newCount,
+        isActive: true,
+        discountValue: 10,
+        discountType: 'PERCENTAGE'
+      });
+    }
+    
+    localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+    
+    // Mettre à jour les compteurs
+    const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+    counters[detail.couponCode] = newCount;
+    localStorage.setItem('coupon_counters', JSON.stringify(counters));
+    
+    // Mettre à jour l'historique
+    const history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+    history.push({
+      couponCode: detail.couponCode,
+      orderNumber: detail.orderNumber || 'N/A',
+      usedAt: new Date().toISOString(),
+      newCount: newCount,
+      source: detail.source || 'admin-sync'
+    });
+    localStorage.setItem('coupon_usage_history', JSON.stringify(history));
+    
+    // Afficher la notification
+    this.showAlert(`📊 Coupon ${detail.couponCode} : ${newCount} utilisation(s)`, 'success');
+    
+  } else {
+    console.warn(`⚠️ Coupon ${detail.couponCode} non trouvé`);
+    this.loadCoupons();
+  }
+}
+
+/**
+ * ✅ FORCE LA MISE À JOUR DE L'AFFICHAGE DES COUPONS
+ */
+refreshCouponDisplay(): void {
+  console.log('🔄 Rafraîchissement des coupons');
+  
+  const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+  let updated = false;
+  
+  this.coupons.forEach(coupon => {
+    if (counters[coupon.code] !== undefined && coupon.usedCount !== counters[coupon.code]) {
+      coupon.usedCount = counters[coupon.code];
+      updated = true;
+    }
+  });
+  
+  if (updated) {
+    this.coupons = [...this.coupons];
+    this.showAlert('Coupons mis à jour', 'success');
+  }
 }
 } 

@@ -3,7 +3,8 @@ import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 interface Product {
   id: number;
@@ -22,33 +23,12 @@ interface Product {
   category: string;
   isActive?: boolean;
   stockQuantity?: number;
-}
-
-interface AdminProduct {
-  id: number;
-  name: string;
-  price: number;
-  imageUrl: string;
-  description: string;
-  category: string;
-  reference: string;
-  composition?: string;
-  weight?: number;
-  isActive: boolean;
-  stockQuantity: number;
-  isNew?: boolean;
-  isBestSeller?: boolean;
-  specialOffer?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  tags?: string[];
-}
-
-interface Service {
-  id: number;
-  title: string;
-  description: string;
-  image: string;
+  hasDiscount?: boolean;
+  discountPercentage?: number;
+  originalPrice?: string;
+  discountedPrice?: string;
+  couponIds?: number[];
+  appliedCouponCode?: string;
 }
 
 interface CartItem {
@@ -57,6 +37,12 @@ interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  originalPrice?: number;
+  discountPercentage?: number;
+  discountedPrice?: number;
+  couponApplied?: boolean;
+  couponCode?: string;
+  hasDiscount?: boolean;
 }
 
 interface OrderItem {
@@ -68,6 +54,8 @@ interface OrderItem {
   productCategory?: string;
   productSku?: string;
   productImage?: string;
+  discountApplied?: number;
+  couponCode?: string;
 }
 
 interface Order {
@@ -85,12 +73,42 @@ interface Order {
   paymentStatus: string;
   subtotal: number;
   shippingCost: number;
+  discountAmount: number;
   totalAmount: number;
   orderDate: string;
   orderItems: OrderItem[];
   paymentMethod: string;
   shippingMethod?: string;
   trackingNumber?: string;
+  appliedCouponCode?: string;
+  couponIncremented?: boolean;
+  productType?: string;
+}
+
+interface Coupon {
+  id: number;
+  code: string;
+  discountValue: number;
+  discountType: string;
+  discountExtra?: number;
+  expiryDate: string;
+  description?: string;
+  maxUses?: number;
+  minOrderAmount?: number;
+  isActive: boolean;
+  usedCount?: number;
+  freeShipping?: boolean;
+  startDate?: string;
+  applicableProducts?: number[];
+  categories?: string[];
+  tags?: string[];
+}
+
+interface Service {
+  id: number;
+  title: string;
+  description: string;
+  image: string;
 }
 
 @Component({
@@ -107,6 +125,7 @@ interface Order {
   styleUrls: ['./huiles-essentielles.css']
 })
 export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
+  // Hero Section
   heroImage = 'https://i.pinimg.com/736x/51/89/eb/5189eb3000fb42e2145c7306c7673063.jpg';
   heroTitle = 'Créez une atmosphère chaleureuse dans votre maison';
   heroDescription = 'Découvrez nos huiles essentielles pures et naturelles créées artisanalement. Transformez votre intérieur en un véritable havre de paix et de bien-être.';
@@ -145,8 +164,8 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
 
   // CTA Section
   ctaImage = 'https://i.pinimg.com/736x/15/af/16/15af165eaa323813e82542940a33c721.jpg';
-  ctaTitle = '15% de réduction sur votre première commande';
-  ctaDescription = 'Rejoignez notre communauté et bénéficiez d\'un code promo exclusif. De plus, soyez les premiers informés de nos nouveautés et offres spéciales.';
+  ctaTitle = 'Recevez des offres exclusives';
+  ctaDescription = 'Rejoignez notre communauté et soyez les premiers informés de nos nouveautés et offres spéciales.';
   
   // Newsletter
   email = '';
@@ -167,6 +186,10 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
     'Sousse', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan'
   ];
 
+  // Coupons
+  coupons: Coupon[] = [];
+  appliedCoupon: Coupon | null = null;
+
   // Product Modal
   showProductOverlay = false;
   expandedProductId: number | null = null;
@@ -176,6 +199,7 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
   mobileMenuOpen: boolean = false;
   mobileSubmenuOpen = false;
   currentLanguage: string = 'fr';
+  showLanguageMenu: boolean = false;
 
   // Notification properties
   notificationMessage: string = '';
@@ -198,6 +222,7 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private http: HttpClient
   ) {
+    // Suppression du champ paymentMethod car uniquement paiement à la livraison
     this.orderForm = this.fb.group({
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
@@ -206,22 +231,20 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
       city: ['', [Validators.required, Validators.minLength(2)]],
       phone: ['', [Validators.required, Validators.pattern(/^[0-9]{8}$/)]],
       email: ['', [Validators.email]],
-      notes: [''],
-      paymentMethod: ['delivery', Validators.required]
+      notes: ['']
     });
   }
 
   // ==================== LIFECYCLE HOOKS ====================
 
   ngOnInit(): void {
-    // Charger la langue préférée
     const savedLang = localStorage.getItem('preferredLanguage');
     if (savedLang) {
       this.currentLanguage = savedLang;
     }
     
-    // Charger les produits depuis l'admin
     this.loadProductsFromAdmin();
+    this.loadCouponsFromAdmin();
     this.loadCart();
     this.setupEventListeners();
     this.setupKeyboardListeners();
@@ -237,364 +260,109 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ==================== CHARGEMENT DES PRODUITS DEPUIS L'ADMIN ====================
+  // ==================== MÉTHODES DU PANIER ====================
 
-  /**
-   * Récupère les produits huiles essentielles depuis le stockage admin
-   */
-  private loadProductsFromAdmin(): void {
-    console.log('🔍 Chargement des produits depuis le stockage admin...');
+  getSubtotal(): number {
+    return this.cart.reduce((total, item) => {
+      const itemPrice = item.originalPrice || item.price;
+      return total + (itemPrice * item.quantity);
+    }, 0);
+  }
+
+  getDiscountAmount(): number {
+    const autoCouponCode = this.getOrderCouponCode();
+    if (!autoCouponCode) return 0;
     
-    try {
-      // Récupérer tous les produits depuis le localStorage admin
-      const adminProductsJson = localStorage.getItem('adminProducts');
-      
-      if (!adminProductsJson) {
-        console.log('ℹ️  Aucun produit trouvé dans le stockage admin');
-        this.products = [];
-        this.filteredProducts = [];
-        this.isLoadingProducts = false;
-        return;
-      }
-      
-      const allProducts: AdminProduct[] = JSON.parse(adminProductsJson);
-      console.log(`📦 ${allProducts.length} produits trouvés dans l'admin`);
-      
-      // Filtrer UNIQUEMENT les huiles essentielles
-      const huilesEssentiellesProducts = this.filterHuilesEssentiellesProducts(allProducts);
-      
-      console.log(`✅ ${huilesEssentiellesProducts.length} huiles essentielles filtrées depuis l'admin`);
-      
-      // Si aucun produit huile essentielle trouvé
-      if (huilesEssentiellesProducts.length === 0) {
-        console.log('⚠️  Aucune huile essentielle trouvée dans les produits admin');
-        this.products = [];
-        this.filteredProducts = [];
-        this.isLoadingProducts = false;
-        return;
-      }
-      
-      // Transformer au format de cette page
-      this.products = this.transformAdminProducts(huilesEssentiellesProducts);
-      this.filteredProducts = [...this.products];
-      
-      this.isLoadingProducts = false;
-      
-    } catch (error) {
-      console.error('❌ Erreur lors du chargement des produits admin:', error);
-      this.products = [];
-      this.filteredProducts = [];
-      this.isLoadingProducts = false;
-    }
-  }
-
-  /**
-   * Filtre STRICT pour n'avoir que les huiles essentielles depuis l'admin
-   */
-  private filterHuilesEssentiellesProducts(products: AdminProduct[]): AdminProduct[] {
-    return products.filter(product => {
-      // Vérifier si le produit est actif et a du stock
-      if (!product.isActive || product.stockQuantity === 0) {
-        return false;
-      }
-      
-      // Vérifier par référence (priorité)
-      const reference = (product.reference || '').toLowerCase().trim();
-      const name = (product.name || '').toLowerCase();
-      const category = (product.category || '').toLowerCase();
-      
-      // Critères d'inclusion basés sur la référence
-      const isHuileEssentielle = 
-        // Références commençant par HE (Huile Essentielle)
-        reference.startsWith('he') ||
-        reference.startsWith('he-') ||
-        reference.startsWith('h e ') ||
-        reference.includes('-he-') ||
-        reference.includes('_he_') ||
-        
-        // Références spécifiques aux huiles essentielles
-        reference.startsWith('eo') || // Essential Oil
-        reference.startsWith('ess') || // Essence
-        reference.includes('huile') ||
-        reference.includes('essential') ||
-        
-        // Si pas de référence claire, vérifier par nom/catégorie
-        (!reference && (
-          name.includes('huile essentielle') ||
-          name.includes('essential oil') ||
-          category.includes('huiles essentielles') ||
-          category.includes('essential oils')
-        ));
-      
-      return isHuileEssentielle;
-    });
-  }
-
-  /**
-   * Transforme les produits admin au format de la page huiles essentielles
-   */
-  private transformAdminProducts(adminProducts: AdminProduct[]): Product[] {
-    return adminProducts.map(product => ({
-      id: product.id,
-      name: product.name,
-      description: product.description || 'Huile essentielle pure et naturelle',
-      price: this.formatPrice(product.price),
-      image: product.imageUrl || this.getDefaultHuileImage(),
-      reference: product.reference || `HE${product.id}`,
-      duration: '2 ans',
-      composition: product.composition || '100% huile essentielle pure',
-      skinType: 'Aromathérapie',
-      badge: this.getHuileBadge(product),
-      category: 'Huiles Essentielles',
-      weight: product.weight ? `${product.weight}ml` : '10ml',
-      size: '3x3x8 cm',
-      specialOffer: product.specialOffer || '',
-      isActive: product.isActive,
-      stockQuantity: product.stockQuantity || 0
-    }));
-  }
-
-  private formatPrice(price: number): string {
-    return typeof price === 'number' ? price.toFixed(2).replace('.', ',') : '0,00';
-  }
-
-  private getDefaultHuileImage(): string {
-    return 'https://i.pinimg.com/736x/51/89/eb/5189eb3000fb42e2145c7306c7673063.jpg';
-  }
-
-  private getHuileBadge(product: AdminProduct): string {
-    if (product.isActive === false) return 'Indisponible';
-    if (product.stockQuantity === 0) return 'Rupture';
-    if (product.stockQuantity < 5) return 'Stock faible';
-    if (product.isNew) return 'Nouveau';
-    if (product.isBestSeller) return 'Best-seller';
-    if (product.specialOffer) return 'Promotion';
-    return 'Bio';
-  }
-
-  /**
-   * Force le rechargement des produits depuis l'admin
-   */
-  refreshFromAdmin(): void {
-    console.log('🔄 Rechargement forcé depuis l\'admin');
-    this.isLoadingProducts = true;
+    const coupon = this.coupons.find(c => c.code === autoCouponCode);
+    if (!coupon) return 0;
     
-    // Recharger depuis l'admin
-    setTimeout(() => {
-      this.loadProductsFromAdmin();
-      this.showNotification('Produits huiles essentielles rechargés depuis l\'admin');
-    }, 500);
-  }
-
-  // ==================== GESTION DE LA LANGUE ====================
-
-  /**
-   * Gestion du changement de langue via select
-   */
-  onLanguageChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const lang = select.value;
-    this.changeLanguage(lang);
-  }
-
-  /**
-   * Change la langue de l'application
-   */
-  changeLanguage(lang: string): void {
-    this.currentLanguage = lang;
-    localStorage.setItem('preferredLanguage', lang);
-    console.log(`Changement de langue vers: ${lang}`);
+    const cartTotal = this.getCartTotal();
     
-    // Mettre à jour les textes si nécessaire
-    if (lang === 'en') {
-      this.heroTitle = 'Create a warm atmosphere in your home';
-      this.heroDescription = 'Discover our pure and natural essential oils, crafted by hand. Transform your interior into a true haven of peace and well-being.';
-      this.catalogTitle = 'Our Pure Essential Oils';
-      this.featuresTitle = 'The excellence of nature';
-      this.servicesTitle = 'Our Commitments';
-      this.ctaTitle = '15% off your first order';
-      this.ctaDescription = 'Join our community and benefit from an exclusive promo code. Plus, be the first to know about our new products and special offers.';
-    } else if (lang === 'ar') {
-      this.heroTitle = 'أنشئ جوًا دافئًا في منزلك';
-      this.heroDescription = 'اكتشف زيوتنا الأساسية النقية والطبيعية المصنوعة يدوياً. حول داخلك إلى ملاذ حقيقي للسلام والرفاهية.';
-      this.catalogTitle = 'زيوتنا الأساسية النقية';
-      this.featuresTitle = 'تميز الطبيعة';
-      this.servicesTitle = 'تعهداتنا';
-      this.ctaTitle = 'خصم 15٪ على طلبك الأول';
-      this.ctaDescription = 'انضم إلى مجتمعنا واستفد من رمز ترويجي حصري. بالإضافة إلى ذلك، كن أول من يعرف عن منتجاتنا الجديدة والعروض الخاصة.';
-    } else {
-      this.heroTitle = 'Créez une atmosphère chaleureuse dans votre maison';
-      this.heroDescription = 'Découvrez nos huiles essentielles pures et naturelles créées artisanalement. Transformez votre intérieur en un véritable havre de paix et de bien-être.';
-      this.catalogTitle = 'Nos Huiles Essentielles Pures';
-      this.featuresTitle = 'L\'excellence du naturel';
-      this.servicesTitle = 'Nos Engagements';
-      this.ctaTitle = '15% de réduction sur votre première commande';
-      this.ctaDescription = 'Rejoignez notre communauté et bénéficiez d\'un code promo exclusif. De plus, soyez les premiers informés de nos nouveautés et offres spéciales.';
+    if (coupon.discountType === 'PERCENTAGE') {
+      return Math.round(cartTotal * (coupon.discountValue / 100) * 100) / 100;
+    } else if (coupon.discountType === 'FIXED') {
+      return Math.min(coupon.discountValue, cartTotal);
     }
+    
+    return 0;
   }
 
-  // ==================== GESTION DU MENU MOBILE ====================
-
-  /**
-   * Bascule le menu mobile
-   */
-  toggleMobileMenu(): void {
-    this.mobileMenuOpen = !this.mobileMenuOpen;
-    if (this.mobileMenuOpen) {
-      document.body.classList.add('modal-open');
-    } else {
-      document.body.classList.remove('modal-open');
-    }
+  getCartTotal(): number {
+    return this.cart.reduce((total, item) => {
+      return total + (item.price * item.quantity);
+    }, 0);
   }
 
-  /**
-   * Ferme le menu mobile
-   */
-  closeMobileMenu(): void {
-    this.mobileMenuOpen = false;
-    this.mobileSubmenuOpen = false;
+  shouldApplyFreeShipping(): boolean {
+    const autoCouponCode = this.getOrderCouponCode();
+    if (!autoCouponCode) return false;
+    
+    const coupon = this.coupons.find(c => c.code === autoCouponCode);
+    return coupon?.freeShipping || false;
+  }
+
+  getTotalWithShipping(): number {
+    const subtotal = this.getCartTotal();
+    const discount = this.getDiscountAmount();
+    const shippingCost = 7; // Frais de livraison fixes
+    return Math.max(0, subtotal - discount + shippingCost);
+  }
+
+  getAutoCouponMessage(): string {
+    const autoCouponCode = this.getOrderCouponCode();
+    if (!autoCouponCode) return "";
+    
+    const coupon = this.coupons.find(c => c.code === autoCouponCode);
+    if (!coupon) return "";
+    
+    const total = this.getCartTotal();
+    
+    if (coupon.discountType === 'PERCENTAGE') {
+      const discountAmount = Math.round(total * (coupon.discountValue / 100) * 100) / 100;
+      return `-${discountAmount} DT`;
+    } else if (coupon.discountType === 'FIXED') {
+      const discountAmount = Math.min(coupon.discountValue, total);
+      return `-${discountAmount} DT`;
+    }
+    
+    return coupon.freeShipping ? "Livraison offerte" : "";
+  }
+
+  backToCart(): void {
+    this.showCheckoutSection = false;
+    this.cartVisible = true;
+  }
+
+  closeCheckout(): void {
+    this.showCheckoutSection = false;
     document.body.classList.remove('modal-open');
   }
 
-  /**
-   * Bascule le sous-menu mobile
-   */
-  toggleMobileSubmenu(): void {
-    this.mobileSubmenuOpen = !this.mobileSubmenuOpen;
-  }
-
-  /**
-   * Navigue vers une route spécifique
-   */
-  navigateTo(route: string): void {
-    this.closeMobileMenu();
-    setTimeout(() => {
-      this.router.navigate([route]);
-    }, 300);
-  }
-
-  /**
-   * Défilement vers une section spécifique
-   */
-  scrollToSection(sectionId: string): void {
-    this.closeMobileMenu();
-    
-    setTimeout(() => {
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 300);
-  }
-
-  /**
-   * Bascule le menu mobile (alias pour compatibilité)
-   */
-  toggleMenu(): void {
-    this.toggleMobileMenu();
-  }
-
-  // ==================== ÉCOUTEURS D'ÉVÉNEMENTS ====================
-
-  private setupEventListeners(): void {
-    // Synchronisation automatique toutes les 2 minutes
-    setInterval(() => {
-      this.refreshFromAdmin();
-    }, 120000);
-  }
-
-  private setupAdminUpdateListener(): void {
-    // Écouter les mises à jour des produits admin
-    window.addEventListener('adminProductsUpdated', () => {
-      console.log('🔄 Mise à jour des produits admin détectée');
-      this.refreshFromAdmin();
-    });
-    
-    // Écouter les mises à jour spécifiques aux huiles essentielles
-    window.addEventListener('huilesEssentiellesUpdated', () => {
-      console.log('🔄 Mise à jour spécifique huiles essentielles');
-      this.refreshFromAdmin();
-    });
-  }
-
-  private setupKeyboardListeners(): void {
-    this.keydownListener = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if (this.showProductOverlay) {
-          this.closeProductOverlay();
-        }
-        if (this.cartVisible) {
-          this.toggleCart();
-        }
-        if (this.showCheckoutSection) {
-          this.showCheckoutSection = false;
-          document.body.classList.remove('modal-open');
-        }
-        if (this.mobileMenuOpen) {
-          this.closeMobileMenu();
-        }
-      }
-    };
-    document.addEventListener('keydown', this.keydownListener);
-  }
-
-  // ==================== MÉTHODES DE NAVIGATION ====================
-
-  translate(key: string): string {
-    const translations: { [key: string]: { fr: string; en: string; ar?: string } } = {
-      'home': { fr: 'Accueil', en: 'Home', ar: 'الرئيسية' },
-      'products': { fr: 'Produits', en: 'Products', ar: 'المنتجات' },
-      'about': { fr: 'À propos', en: 'About', ar: 'من نحن' },
-      'contact': { fr: 'Contact', en: 'Contact', ar: 'اتصل بنا' },
-      'menu': { fr: 'Menu', en: 'Menu', ar: 'القائمة' },
-      'olive_oils': { fr: 'Huiles d\'Olive', en: 'Olive Oils', ar: 'زيوت الزيتون' },
-      'natural_soaps': { fr: 'Savons Naturels', en: 'Natural Soaps', ar: 'الصابون الطبيعي' },
-      'essential_oils': { fr: 'Huiles Essentielles', en: 'Essential Oils', ar: 'الزيوت الأساسية' },
-      'natural_care': { fr: 'Soins Naturels', en: 'Natural Care', ar: 'العناية الطبيعية' },
-      'our_story': { fr: 'Notre histoire', en: 'Our Story', ar: 'قصتنا' }
-    };
-    
-    const translation = translations[key];
-    if (!translation) return key;
-    
-    switch (this.currentLanguage) {
-      case 'en':
-        return translation.en;
-      case 'ar':
-        return translation.ar || translation.fr;
-      default: // 'fr'
-        return translation.fr;
-    }
-  }
-
-  // ==================== GESTION DU PANIER ====================
-
-  loadCart(): void {
-    const savedCart = localStorage.getItem('huilesEssentiellesCart');
-    if (savedCart) {
-      this.cart = JSON.parse(savedCart);
-      this.cartItemCount = this.cart.reduce((total, item) => total + item.quantity, 0);
-    }
-  }
-
-  saveCart(): void {
-    localStorage.setItem('huilesEssentiellesCart', JSON.stringify(this.cart));
-    this.cartItemCount = this.cart.reduce((total, item) => total + item.quantity, 0);
-  }
-
   addToCart(product: Product): void {
-    // Vérifier si le produit existe dans la liste
-    if (!product) {
-      this.showNotification('Produit non disponible');
-      return;
-    }
-    
     if ((product.stockQuantity || 0) === 0) {
-      this.showNotification('Cette huile essentielle est en rupture de stock');
+      this.showNotification('Ce produit est en rupture de stock');
       return;
     }
 
-    const price = parseFloat(product.price.replace(',', '.'));
+    const productCoupon = this.getProductCoupon(product);
+    
+    let finalPrice: number;
+    let appliedCouponCode: string | undefined;
+    let hasDiscount = false;
+    
+    if (productCoupon) {
+      const originalPrice = parseFloat(product.originalPrice?.replace(',', '.') || product.price.replace(',', '.'));
+      finalPrice = this.calculateDiscountedPrice(originalPrice, productCoupon);
+      appliedCouponCode = productCoupon.code;
+      hasDiscount = true;
+      
+      console.log(`🎫 Coupon auto-appliqué pour ${product.name}: ${productCoupon.code} (${productCoupon.discountValue}%)`);
+    } else if (product.hasDiscount && product.discountedPrice) {
+      finalPrice = parseFloat(product.discountedPrice.replace(',', '.'));
+      hasDiscount = true;
+    } else {
+      finalPrice = parseFloat(product.price.replace(',', '.'));
+    }
     
     const existingItem = this.cart.find(item => item.id === product.id);
     
@@ -604,13 +372,23 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
         return;
       }
       existingItem.quantity += 1;
+      if (appliedCouponCode && !existingItem.couponCode) {
+        existingItem.couponCode = appliedCouponCode;
+      }
+      existingItem.hasDiscount = hasDiscount;
     } else {
       this.cart.push({
         id: product.id,
         name: product.name,
-        price: price,
+        price: finalPrice,
         image: product.image,
-        quantity: 1
+        quantity: 1,
+        originalPrice: product.originalPrice ? parseFloat(product.originalPrice.replace(',', '.')) : finalPrice,
+        discountPercentage: product.discountPercentage,
+        discountedPrice: finalPrice,
+        couponApplied: !!productCoupon || product.hasDiscount || false,
+        couponCode: appliedCouponCode,
+        hasDiscount: hasDiscount
       });
     }
     
@@ -646,7 +424,6 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
 
   toggleCart(): void {
     this.cartVisible = !this.cartVisible;
-    
     if (this.cartVisible) {
       document.body.classList.add('modal-open');
     } else {
@@ -654,14 +431,17 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
     }
   }
 
-  getCartTotal(): number {
-    return this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  loadCart(): void {
+    const savedCart = localStorage.getItem('huilesEssentiellesCart');
+    if (savedCart) {
+      this.cart = JSON.parse(savedCart);
+      this.cartItemCount = this.cart.reduce((total, item) => total + item.quantity, 0);
+    }
   }
 
-  getTotalWithShipping(): number {
-    const subtotal = this.getCartTotal();
-    const shipping = this.orderForm.get('paymentMethod')?.value === 'delivery' ? 7 : 0;
-    return subtotal + shipping;
+  saveCart(): void {
+    localStorage.setItem('huilesEssentiellesCart', JSON.stringify(this.cart));
+    this.cartItemCount = this.cart.reduce((total, item) => total + item.quantity, 0);
   }
 
   checkout(): void {
@@ -670,31 +450,646 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const stockErrors = this.checkStockBeforeOrder();
-    if (stockErrors.length > 0) {
-      this.showNotification(stockErrors[0]);
-      return;
-    }
-
     this.cartVisible = false;
     this.showCheckoutSection = true;
     document.body.classList.add('modal-open');
   }
 
-  backToCart(): void {
-    this.showCheckoutSection = false;
-    this.cartVisible = true;
-  }
-
-  clearCart(): void {
-    this.cart = [];
-    this.saveCart();
-    this.cartVisible = false;
-    document.body.classList.remove('modal-open');
-    this.showNotification('Panier vidé');
-  }
-
   // ==================== GESTION DES PRODUITS ====================
+
+  getProductById(productId: number): Product | undefined {
+    return this.products.find(product => product.id === productId);
+  }
+
+  private getProductCoupon(product: Product): Coupon | null {
+    if (product.couponIds && product.couponIds.length > 0) {
+      const coupon = this.coupons.find(c => 
+        product.couponIds!.includes(c.id) && 
+        c.isActive && 
+        !this.isCouponExpired(c) &&
+        !this.isCouponExhausted(c)
+      );
+      if (coupon) return coupon;
+    }
+    
+    if (product.appliedCouponCode) {
+      const coupon = this.coupons.find(c => 
+        c.code === product.appliedCouponCode && 
+        c.isActive && 
+        !this.isCouponExpired(c) &&
+        !this.isCouponExhausted(c)
+      );
+      if (coupon) return coupon;
+    }
+    
+    return null;
+  }
+
+  private isCouponExpired(coupon: Coupon): boolean {
+    if (!coupon.expiryDate) return false;
+    return new Date(coupon.expiryDate) < new Date();
+  }
+
+  private isCouponExhausted(coupon: Coupon): boolean {
+    if (!coupon.maxUses) return false;
+    return (coupon.usedCount || 0) >= coupon.maxUses;
+  }
+
+  private calculateDiscountedPrice(originalPrice: number, coupon: Coupon): number {
+    let discountedPrice = originalPrice;
+    
+    switch (coupon.discountType) {
+      case 'PERCENTAGE':
+        discountedPrice = originalPrice * (1 - coupon.discountValue / 100);
+        if (coupon.discountExtra) {
+          discountedPrice = discountedPrice * (1 - coupon.discountExtra / 100);
+        }
+        break;
+      case 'FIXED':
+        discountedPrice = Math.max(0, originalPrice - coupon.discountValue);
+        break;
+    }
+    
+    return Math.round(discountedPrice * 100) / 100;
+  }
+
+  private getOrderCouponCode(): string | null {
+    const appliedCodes = new Set<string>();
+    
+    this.cart.forEach(item => {
+      if (item.couponCode) {
+        appliedCodes.add(item.couponCode);
+      } else {
+        const product = this.getProductById(item.id);
+        if (product) {
+          const coupon = this.getProductCoupon(product);
+          if (coupon) {
+            appliedCodes.add(coupon.code);
+          }
+        }
+      }
+    });
+    
+    if (appliedCodes.size > 0) {
+      const couponCode = Array.from(appliedCodes)[0];
+      console.log(`🎫 Coupon auto-détecté pour la commande: ${couponCode}`);
+      return couponCode;
+    }
+    
+    return null;
+  }
+
+  // ==================== GESTION DES COMMANDES ====================
+
+  private prepareOrderData(): any {
+    const formValue = this.orderForm.value;
+    const orderItems = this.convertCartToOrderItems();
+    const subtotal = this.getCartTotal();
+    
+    const autoCouponCode = this.getOrderCouponCode();
+    let discountAmount = 0;
+    let appliedCoupon: Coupon | null = null;
+    
+    if (autoCouponCode) {
+      appliedCoupon = this.coupons.find(c => c.code === autoCouponCode) || null;
+      
+      if (appliedCoupon) {
+        if (appliedCoupon.discountType === 'PERCENTAGE') {
+          discountAmount = subtotal * (appliedCoupon.discountValue / 100);
+          if (appliedCoupon.discountExtra) {
+            discountAmount += discountAmount * (appliedCoupon.discountExtra / 100);
+          }
+        } else if (appliedCoupon.discountType === 'FIXED') {
+          discountAmount = Math.min(appliedCoupon.discountValue, subtotal);
+        }
+        
+        discountAmount = Math.round(discountAmount * 100) / 100;
+      }
+    }
+    
+    // Frais de livraison fixes de 7 DT
+    const shippingCost = 7;
+    const totalAmount = subtotal - discountAmount + shippingCost;
+    
+    // Paiement UNIQUEMENT à la livraison
+    const paymentStatus = 'PENDING';
+    const paymentMethod = 'CASH_ON_DELIVERY';
+
+    return {
+      customerFirstName: formValue.firstName.trim(),
+      customerLastName: formValue.lastName.trim(),
+      customerPhone: formValue.phone,
+      customerEmail: formValue.email?.trim() || null,
+      deliveryAddress: `${formValue.address.trim()}, ${formValue.city.trim()}, ${formValue.governorate}`,
+      governorate: formValue.governorate,
+      city: formValue.city.trim(),
+      notes: formValue.notes?.trim() || null,
+      status: 'PENDING',
+      paymentStatus: paymentStatus,
+      paymentMethod: paymentMethod,
+      shippingMethod: 'STANDARD',
+      shippingCost: shippingCost,
+      discountAmount: discountAmount,
+      subtotal: subtotal,
+      totalAmount: totalAmount,
+      orderItems: orderItems,
+      orderDate: new Date().toISOString(),
+      appliedCouponCode: autoCouponCode,
+      productType: 'HUILES_ESSENTIELLES',
+      couponIncremented: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  private convertCartToOrderItems(): OrderItem[] {
+    return this.cart.map(item => {
+      const product = this.getProductById(item.id);
+      
+      let itemCouponCode = item.couponCode;
+      if (!itemCouponCode && product) {
+        const coupon = this.getProductCoupon(product);
+        if (coupon) {
+          itemCouponCode = coupon.code;
+        }
+      }
+      
+      return {
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.price * item.quantity,
+        productCategory: product?.category || '',
+        productSku: product?.reference || '',
+        productImage: product?.image || '',
+        discountApplied: item.discountPercentage || 0,
+        couponCode: itemCouponCode || undefined
+      };
+    });
+  }
+
+  async submitOrder(): Promise<void> {
+    if (this.orderForm.invalid) {
+      this.markFormGroupTouched();
+      this.showNotification('Veuillez corriger les erreurs dans le formulaire');
+      return;
+    }
+
+    if (this.cart.length === 0) {
+      this.showNotification('Votre panier est vide!');
+      return;
+    }
+
+    this.isSubmittingOrder = true;
+
+    try {
+      const orderData = this.prepareOrderData();
+      
+      console.log('📤 Envoi de la commande avec paiement à la livraison');
+      
+      const headers = new HttpHeaders({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      });
+      
+      const response = await firstValueFrom(
+        this.http.post(this.API_URL, orderData, { headers })
+      ) as any;
+      
+      console.log('✅ Réponse du serveur reçue:', response);
+      
+      if (response.couponCode && response.couponUtilise === true) {
+        console.log(`🎫 Coupon auto ${response.couponCode} utilisé avec succès`);
+        console.log(`   Ancien compteur: ${response.couponAncienCompteur}`);
+        console.log(`   Nouveau compteur: ${response.couponNouveauCompteur}`);
+        
+        this.updateAdminCouponCounters(
+          response.couponCode, 
+          response.couponNouveauCompteur,
+          response.couponAncienCompteur
+        );
+        
+        if (this.appliedCoupon && this.appliedCoupon.code === response.couponCode) {
+          this.appliedCoupon.usedCount = response.couponNouveauCompteur;
+        }
+        
+        if (response.couponWarning) {
+          this.showNotification(`⚠️ ${response.couponWarning}`);
+        } else {
+          this.showNotification(`✅ Coupon ${response.couponCode} utilisé automatiquement`);
+        }
+      }
+      
+      this.cart = [];
+      this.appliedCoupon = null;
+      this.saveCart();
+      this.showCheckoutSection = false;
+      document.body.classList.remove('modal-open');
+
+      this.showNotification(`✅ Commande confirmée! Numéro: ${response.orderNumber} - Paiement à la livraison`);
+      
+      setTimeout(() => {
+        this.router.navigate(['/huiles-essentielles']);
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('❌ Erreur:', error);
+      this.showNotification('Erreur lors de la création de la commande');
+      
+    } finally {
+      this.isSubmittingOrder = false;
+    }
+  }
+
+  private markFormGroupTouched(): void {
+    Object.keys(this.orderForm.controls).forEach(key => {
+      this.orderForm.get(key)?.markAsTouched();
+    });
+  }
+
+  // ==================== CHARGEMENT DES PRODUITS ET COUPONS ====================
+
+  private loadProductsFromAdmin(): void {
+    console.log('🔍 Chargement des produits huiles essentielles...');
+    this.isLoadingProducts = true;
+
+    const huilesProducts = localStorage.getItem('huilesEssentiellesProducts');
+    
+    if (huilesProducts) {
+      try {
+        const products = JSON.parse(huilesProducts);
+        if (products.length > 0) {
+          console.log(`✅ ${products.length} produits huiles essentielles chargés depuis cache`);
+          this.products = this.transformAdminProducts(products);
+          this.filteredProducts = [...this.products];
+          this.isLoadingProducts = false;
+          this.applyCouponDiscountsToProducts();
+          return;
+        }
+      } catch (error) {
+        console.error('❌ Erreur parsing huilesEssentiellesProducts:', error);
+      }
+    }
+
+    const adminProducts = localStorage.getItem('adminProducts');
+    if (adminProducts) {
+      try {
+        const allProducts = JSON.parse(adminProducts);
+        const huilesProducts = this.filterHuilesEssentiellesProducts(allProducts);
+        
+        if (huilesProducts.length > 0) {
+          console.log(`✅ ${huilesProducts.length} produits huiles essentielles filtrés depuis adminProducts`);
+          this.products = this.transformAdminProducts(huilesProducts);
+          this.filteredProducts = [...this.products];
+          this.isLoadingProducts = false;
+          localStorage.setItem('huilesEssentiellesProducts', JSON.stringify(huilesProducts));
+          this.applyCouponDiscountsToProducts();
+          return;
+        }
+      } catch (error) {
+        console.error('❌ Erreur parsing adminProducts:', error);
+      }
+    }
+
+    console.log('ℹ️  Utilisation des produits par défaut pour huiles essentielles');
+    this.products = this.getDefaultProducts();
+    this.filteredProducts = [...this.products];
+    this.isLoadingProducts = false;
+    this.applyCouponDiscountsToProducts();
+  }
+
+  private filterHuilesEssentiellesProducts(products: any[]): any[] {
+    return products.filter(product => {
+      if (product.isActive === false) return false;
+      
+      const name = (product.name || '').toLowerCase();
+      const category = (product.category || '').toLowerCase();
+      const reference = (product.reference || '').toLowerCase();
+      
+      const isHuileEssentielle = 
+        name.includes('huile essentielle') ||
+        name.includes('essential oil') ||
+        category.includes('huile essentielle') ||
+        category.includes('essential oil') ||
+        reference.startsWith('he') ||
+        reference.includes('essentielle');
+      
+      return isHuileEssentielle;
+    });
+  }
+
+  private getDefaultProducts(): Product[] {
+    return [
+      {
+        id: 1,
+        name: 'Huile Essentielle Lavande',
+        description: 'Apaisante et relaxante, idéale pour favoriser le sommeil et réduire le stress.',
+        price: '24,90',
+        badge: 'Best-seller',
+        image: 'https://i.pinimg.com/736x/51/89/eb/5189eb3000fb42e2145c7306c7673063.jpg',
+        reference: 'HE001',
+        duration: '2 ans',
+        composition: '100% Lavande fine',
+        skinType: 'Aromathérapie',
+        category: 'Relaxation',
+        weight: '10ml',
+        size: '3x3x8 cm',
+        isActive: true,
+        stockQuantity: 25,
+        couponIds: []
+      },
+      {
+        id: 2,
+        name: 'Huile Essentielle Menthe Poivrée',
+        description: 'Stimulante et rafraîchissante, parfaite pour la concentration et la vitalité.',
+        price: '19,90',
+        badge: 'Populaire',
+        image: 'https://i.pinimg.com/736x/37/a2/ac/37a2ac09f00a4bfb35c1e519dfba74e2.jpg',
+        reference: 'HE002',
+        duration: '2 ans',
+        composition: '100% Menthe poivrée',
+        skinType: 'Aromathérapie',
+        category: 'Énergie',
+        weight: '10ml',
+        size: '3x3x8 cm',
+        isActive: true,
+        stockQuantity: 30,
+        couponIds: []
+      },
+      {
+        id: 3,
+        name: 'Huile Essentielle Tea Tree',
+        description: 'Purifiante et assainissante, idéale pour les soins de la peau et l\'entretien de la maison.',
+        price: '22,90',
+        badge: 'Purifiante',
+        image: 'https://i.pinimg.com/736x/15/af/16/15af165eaa323813e82542940a33c721.jpg',
+        reference: 'HE003',
+        duration: '2 ans',
+        composition: '100% Tea Tree',
+        skinType: 'Soin peau',
+        category: 'Soin',
+        weight: '10ml',
+        size: '3x3x8 cm',
+        isActive: true,
+        stockQuantity: 20,
+        couponIds: []
+      }
+    ];
+  }
+
+  private transformAdminProducts(adminProducts: any[]): Product[] {
+    return adminProducts.map(product => ({
+      id: product.id,
+      name: product.name,
+      description: product.description || 'Huile essentielle pure et naturelle',
+      price: this.formatPrice(product.price),
+      image: product.imageUrl || this.getDefaultImage(),
+      reference: product.reference || `HE${product.id}`,
+      duration: '2 ans',
+      composition: product.composition || '100% huile essentielle pure',
+      skinType: 'Aromathérapie',
+      badge: this.getProductBadge(product),
+      category: product.category || 'Huiles Essentielles',
+      weight: product.weight ? `${product.weight}ml` : '10ml',
+      size: '3x3x8 cm',
+      specialOffer: product.specialOffer || '',
+      isActive: product.isActive !== undefined ? product.isActive : true,
+      stockQuantity: product.stockQuantity || 0,
+      hasDiscount: false,
+      discountPercentage: undefined,
+      originalPrice: undefined,
+      discountedPrice: undefined,
+      couponIds: product.couponIds || [],
+      appliedCouponCode: undefined
+    }));
+  }
+
+  private formatPrice(price: number): string {
+    return typeof price === 'number' ? price.toFixed(2).replace('.', ',') : '0,00';
+  }
+
+  private getDefaultImage(): string {
+    return 'https://i.pinimg.com/736x/51/89/eb/5189eb3000fb42e2145c7306c7673063.jpg';
+  }
+
+  private getProductBadge(product: any): string {
+    if (product.isActive === false) return 'Indisponible';
+    if (product.stockQuantity === 0) return 'Rupture';
+    if (product.stockQuantity < 10) return 'Stock faible';
+    if (product.isNew) return 'Nouveau';
+    if (product.isBestSeller) return 'Best-seller';
+    return 'Bio';
+  }
+
+  loadCouponsFromAdmin(): void {
+    console.log('🎫 Chargement des coupons depuis l\'admin...');
+
+    try {
+      const adminCoupons = localStorage.getItem('adminCoupons');
+      const counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+      
+      if (adminCoupons) {
+        let allCoupons = JSON.parse(adminCoupons);
+        
+        allCoupons = allCoupons.map((coupon: any) => ({
+          ...coupon,
+          usedCount: counters[coupon.code] || coupon.usedCount || 0
+        }));
+        
+        const filteredCoupons = this.filterHuilesEssentiellesCoupons(allCoupons);
+        
+        if (filteredCoupons.length > 0) {
+          console.log(`✅ ${filteredCoupons.length} coupons huiles essentielles chargés`);
+          this.coupons = filteredCoupons;
+          this.applyCouponDiscountsToProducts();
+          localStorage.setItem('huilesEssentiellesCoupons', JSON.stringify(filteredCoupons));
+          return;
+        }
+      }
+      
+      const huilesCoupons = localStorage.getItem('huilesEssentiellesCoupons');
+      if (huilesCoupons) {
+        let coupons = JSON.parse(huilesCoupons);
+        coupons = coupons.map((coupon: any) => ({
+          ...coupon,
+          usedCount: counters[coupon.code] || coupon.usedCount || 0
+        }));
+        
+        console.log(`✅ ${coupons.length} coupons huiles essentielles chargés depuis cache`);
+        this.coupons = this.filterActiveCoupons(coupons);
+        this.applyCouponDiscountsToProducts();
+        return;
+      }
+      
+      console.log('ℹ️  Aucun coupon disponible pour huiles essentielles');
+      this.coupons = [];
+      
+    } catch (error) {
+      console.error('❌ Erreur chargement coupons:', error);
+      this.coupons = [];
+    }
+  }
+
+  private filterHuilesEssentiellesCoupons(allCoupons: any[]): Coupon[] {
+    return allCoupons.filter(coupon => {
+      if (!coupon.isActive) return false;
+      if (new Date(coupon.expiryDate) < new Date()) return false;
+      
+      if (coupon.applicableProducts && coupon.applicableProducts.length > 0) {
+        const applicableProducts = coupon.applicableProducts;
+        const huilesProducts = this.products.filter(p => 
+          applicableProducts.includes(p.id)
+        );
+        return huilesProducts.length > 0;
+      }
+      
+      if (coupon.categories && coupon.categories.length > 0) {
+        const couponCategories = coupon.categories.map((c: string) => c.toLowerCase());
+        const huilesCategories = ['huile', 'essentielle', 'aromatherapie', 'bien-etre'];
+        return couponCategories.some((cat: string) => 
+          huilesCategories.some(hc => cat.includes(hc))
+        );
+      }
+      
+      if (coupon.tags && (coupon.tags.includes('HUILES_ESSENTIELLES') || coupon.tags.includes('huiles_essentielles'))) {
+        return true;
+      }
+      
+      return true;
+    });
+  }
+
+  private filterActiveCoupons(coupons: any[]): Coupon[] {
+    return coupons.filter(coupon => {
+      if (!coupon.isActive) return false;
+      return new Date(coupon.expiryDate) >= new Date();
+    });
+  }
+
+  private applyCouponDiscountsToProducts(): void {
+    console.log('🎫 Application des réductions de coupons aux produits...');
+    
+    this.products.forEach(product => {
+      const productCoupon = this.getProductCoupon(product);
+      
+      if (productCoupon) {
+        const originalPrice = parseFloat(product.price.replace(',', '.'));
+        const discountedPrice = this.calculateDiscountedPrice(originalPrice, productCoupon);
+        
+        product.hasDiscount = true;
+        product.discountPercentage = Math.round((1 - (discountedPrice / originalPrice)) * 100);
+        product.originalPrice = product.price;
+        product.discountedPrice = discountedPrice.toFixed(2).replace('.', ',');
+        product.price = product.discountedPrice;
+        product.appliedCouponCode = productCoupon.code;
+        
+        console.log(`✅ Produit "${product.name}": ${product.discountPercentage}% (Coupon: ${productCoupon.code})`);
+      } else {
+        product.hasDiscount = false;
+        product.discountPercentage = undefined;
+        product.originalPrice = undefined;
+        product.discountedPrice = undefined;
+        product.appliedCouponCode = undefined;
+      }
+    });
+    
+    this.filteredProducts = [...this.products];
+  }
+
+  private updateAdminCouponCounters(couponCode: string, newCount: number, oldCount?: number): void {
+    console.log(`🔄 Mise à jour du compteur pour ${couponCode}: ${oldCount || '?'} → ${newCount}`);
+    
+    try {
+      let adminCoupons: any[] = [];
+      try {
+        adminCoupons = JSON.parse(localStorage.getItem('adminCoupons') || '[]');
+      } catch (e) {
+        adminCoupons = [];
+      }
+      
+      const couponIndex = adminCoupons.findIndex((c: any) => c.code === couponCode);
+      
+      if (couponIndex !== -1) {
+        adminCoupons[couponIndex].usedCount = newCount;
+        adminCoupons[couponIndex].lastUpdated = new Date().toISOString();
+      } else {
+        adminCoupons.push({
+          id: Date.now(),
+          code: couponCode,
+          usedCount: newCount,
+          discountValue: 10,
+          discountType: 'PERCENTAGE',
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString()
+        });
+      }
+      
+      localStorage.setItem('adminCoupons', JSON.stringify(adminCoupons));
+      
+      let counters: any = {};
+      try {
+        counters = JSON.parse(localStorage.getItem('coupon_counters') || '{}');
+      } catch (e) {
+        counters = {};
+      }
+      counters[couponCode] = newCount;
+      localStorage.setItem('coupon_counters', JSON.stringify(counters));
+      
+      let history: any[] = [];
+      try {
+        history = JSON.parse(localStorage.getItem('coupon_usage_history') || '[]');
+      } catch (e) {
+        history = [];
+      }
+      
+      history.push({
+        id: Date.now(),
+        couponCode: couponCode,
+        orderNumber: 'CMD-HE-' + Date.now(),
+        customerName: `${this.orderForm.value.firstName} ${this.orderForm.value.lastName}`,
+        usedAt: new Date().toISOString(),
+        oldCount: oldCount || (newCount - 1),
+        newCount: newCount,
+        source: 'huiles-essentielles'
+      });
+      localStorage.setItem('coupon_usage_history', JSON.stringify(history));
+      
+      window.dispatchEvent(new CustomEvent('adminCouponsUpdated', {
+        detail: {
+          couponCode: couponCode,
+          newCount: newCount,
+          oldCount: oldCount,
+          timestamp: new Date().toISOString(),
+          source: 'huiles-essentielles'
+        }
+      }));
+      
+      console.log(`✅ Événement adminCouponsUpdated émis pour ${couponCode}`);
+      
+    } catch (error) {
+      console.error('❌ Erreur mise à jour des compteurs:', error);
+    }
+  }
+
+  // ==================== MÉTHODES UTILITAIRES ====================
+
+  showNotification(message: string): void {
+    if (this.notificationTimeout) {
+      clearTimeout(this.notificationTimeout);
+    }
+
+    this.notificationMessage = message;
+    this.notificationShow = true;
+
+    this.notificationTimeout = setTimeout(() => {
+      this.notificationShow = false;
+      setTimeout(() => {
+        this.notificationMessage = '';
+      }, 300);
+    }, 3000);
+  }
 
   toggleProductDetails(productId: number): void {
     if (this.expandedProductId === productId) {
@@ -730,355 +1125,18 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ==================== GESTION DES COMMANDES ====================
-
-  private checkStockBeforeOrder(): string[] {
-    const errors: string[] = [];
-    
-    this.cart.forEach(item => {
-      const product = this.products.find(p => p.id === item.id);
-      if (product) {
-        if ((product.stockQuantity || 0) === 0) {
-          errors.push(`${product.name} est en rupture de stock`);
-        } else if (item.quantity > (product.stockQuantity || 0)) {
-          errors.push(`Stock insuffisant pour ${product.name}. Disponible: ${product.stockQuantity}`);
-        }
-      }
-    });
-    
-    return errors;
-  }
-
-  private getProductById(productId: number): Product | undefined {
-    return this.products.find(product => product.id === productId);
-  }
-
-  private convertCartToOrderItems(): OrderItem[] {
-    return this.cart.map(item => {
-      const product = this.getProductById(item.id);
-      
-      if (!product) {
-        console.error(`Produit non trouvé pour l'ID: ${item.id}`, item);
-        throw new Error(`Huile essentielle avec ID ${item.id} non trouvée dans le catalogue`);
-      }
-
-      return {
-        productId: item.id,
-        productName: item.name,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.price * item.quantity,
-        productCategory: product.category,
-        productSku: product.reference,
-        productImage: product.image
-      };
-    });
-  }
-
-  private validateOrderData(orderData: any): string[] {
-    const errors: string[] = [];
-
-    if (!orderData.orderItems || orderData.orderItems.length === 0) {
-      errors.push('La commande doit contenir au moins une huile essentielle');
-    } else {
-      orderData.orderItems.forEach((item: any, index: number) => {
-        if (!item.productId || item.productId === null) {
-          errors.push(`L'huile essentielle "${item.productName}" n'a pas d'ID valide`);
-        }
-        if (!item.quantity || item.quantity <= 0) {
-          errors.push(`Quantité invalide pour l'huile essentielle "${item.productName}"`);
-        }
-        if (!item.price || item.price < 0) {
-          errors.push(`Prix invalide pour l'huile essentielle "${item.productName}"`);
-        }
-      });
-    }
-
-    if (!orderData.customerFirstName || orderData.customerFirstName.trim().length < 2) {
-      errors.push('Le prénom est requis (min. 2 caractères)');
-    }
-    if (!orderData.customerLastName || orderData.customerLastName.trim().length < 2) {
-      errors.push('Le nom est requis (min. 2 caractères)');
-    }
-    if (!orderData.customerPhone || !/^[0-9]{8}$/.test(orderData.customerPhone)) {
-      errors.push('Le numéro de téléphone est invalide (8 chiffres requis)');
-    }
-    if (!orderData.deliveryAddress || orderData.deliveryAddress.trim().length < 5) {
-      errors.push('L\'adresse de livraison est requise (min. 5 caractères)');
-    }
-
-    return errors;
-  }
-
-  private prepareOrderData(): any {
-    const formValue = this.orderForm.value;
-    const orderItems = this.convertCartToOrderItems();
-    const subtotal = this.getCartTotal();
-    const shippingCost = formValue.paymentMethod === 'delivery' ? 7 : 0;
-    const totalAmount = subtotal + shippingCost;
-
-    const paymentStatus = formValue.paymentMethod === 'online' ? 'PAID' : 'PENDING';
-    const paymentMethod = formValue.paymentMethod === 'online' ? 'ONLINE' : 'CASH_ON_DELIVERY';
-
-    return {
-      customerFirstName: formValue.firstName.trim(),
-      customerLastName: formValue.lastName.trim(),
-      customerPhone: formValue.phone,
-      customerEmail: formValue.email?.trim() || null,
-      deliveryAddress: `${formValue.address.trim()}, ${formValue.city.trim()}, ${formValue.governorate}`,
-      governorate: formValue.governorate,
-      city: formValue.city.trim(),
-      notes: formValue.notes?.trim() || null,
-      status: 'PENDING',
-      paymentStatus: paymentStatus,
-      paymentMethod: paymentMethod,
-      shippingMethod: 'STANDARD',
-      shippingCost: shippingCost,
-      subtotal: subtotal,
-      totalAmount: totalAmount,
-      orderItems: orderItems,
-      orderDate: new Date().toISOString(),
-      productType: 'HUILES_ESSENTIELLES'
-    };
-  }
-
-  private async sendOrderToAPI(orderData: any): Promise<any> {
-    try {
-      const validationErrors = this.validateOrderData(orderData);
-      if (validationErrors.length > 0) {
-        throw new Error(validationErrors.join(', '));
-      }
-
-      const response = await this.http.post(this.API_URL, orderData).toPromise();
-      return response;
-    } catch (error: any) {
-      console.error('Erreur API complète:', error);
-      
-      if (error.error && error.error.message) {
-        throw new Error(error.error.message);
-      } else if (error.error && error.error.error) {
-        throw new Error(error.error.error);
-      } else if (error.status === 400) {
-        throw new Error('Données invalides envoyées à l\'API. Vérifiez le format des données.');
-      } else if (error.status === 0) {
-        throw new Error('Impossible de se connecter au serveur. Vérifiez que le serveur est démarré.');
-      } else {
-        throw new Error('Erreur lors de l\'envoi de la commande: ' + error.message);
-      }
-    }
-  }
-
-  private async sendAdminNotification(orderData: any, orderNumber: string): Promise<void> {
-    try {
-      const notificationData = {
-        type: 'NEW_ORDER',
-        title: 'Nouvelle Commande d\'Huiles Essentielles',
-        message: `Nouvelle commande ${orderNumber} reçue de ${orderData.customerFirstName} ${orderData.customerLastName}`,
-        orderNumber: orderNumber,
-        customerName: `${orderData.customerFirstName} ${orderData.customerLastName}`,
-        customerPhone: orderData.customerPhone,
-        totalAmount: orderData.totalAmount,
-        orderDate: new Date().toISOString(),
-        items: orderData.orderItems.map((item: any) => ({
-          productId: item.productId,
-          productName: item.productName,
-          quantity: item.quantity,
-          price: item.price,
-          total: item.price * item.quantity
-        })),
-        priority: 'HIGH',
-        productType: 'HUILES_ESSENTIELLES'
-      };
-
-      await this.http.post(this.ADMIN_NOTIFICATION_URL, notificationData).toPromise();
-      console.log('✅ Notification admin envoyée avec succès');
-    } catch (error) {
-      console.warn('⚠️ Impossible d\'envoyer la notification admin, mais la commande est sauvegardée', error);
-    }
-  }
-
-  private saveOrderToAdminSystem(orderData: any, orderNumber: string): void {
-    try {
-      const existingOrders = JSON.parse(localStorage.getItem('adminOrders') || '[]');
-      
-      const adminOrder = {
-        id: Date.now(),
-        orderNumber: orderNumber,
-        customerName: `${orderData.customerFirstName} ${orderData.customerLastName}`,
-        customerEmail: orderData.customerEmail,
-        customerPhone: orderData.customerPhone,
-        deliveryAddress: orderData.deliveryAddress,
-        governorate: orderData.governorate,
-        city: orderData.city,
-        status: 'PENDING',
-        paymentStatus: orderData.paymentStatus,
-        paymentMethod: orderData.paymentMethod,
-        subtotal: orderData.subtotal,
-        shippingCost: orderData.shippingCost,
-        totalAmount: orderData.totalAmount,
-        orderDate: new Date().toISOString(),
-        orderItems: orderData.orderItems,
-        notes: orderData.notes,
-        source: 'HUILES_ESSENTIELLES_PAGE',
-        productType: 'HUILES_ESSENTIELLES',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      existingOrders.unshift(adminOrder);
-      localStorage.setItem('adminOrders', JSON.stringify(existingOrders));
-      
-      window.dispatchEvent(new CustomEvent('newOrderReceived', { 
-        detail: adminOrder 
-      }));
-
-      console.log('✅ Commande huiles essentielles sauvegardée dans le système admin');
-    } catch (error) {
-      console.error('❌ Erreur sauvegarde commande admin:', error);
-    }
-  }
-
-  private updateStockAfterOrder(orderItems: OrderItem[]): void {
-    try {
-      orderItems.forEach(item => {
-        const productIndex = this.products.findIndex(p => p.id === item.productId);
-        if (productIndex !== -1) {
-          const currentStock = this.products[productIndex].stockQuantity || 0;
-          this.products[productIndex].stockQuantity = Math.max(0, currentStock - item.quantity);
-          this.products[productIndex].badge = this.getHuileBadge(this.products[productIndex] as any);
-        }
-      });
-
-      // Mettre à jour les produits dans l'admin
-      const adminProducts = JSON.parse(localStorage.getItem('adminProducts') || '[]');
-      const updatedAdminProducts = adminProducts.map((adminProduct: AdminProduct) => {
-        const product = this.products.find(p => p.id === adminProduct.id);
-        if (product) {
-          return {
-            ...adminProduct,
-            stockQuantity: product.stockQuantity || 0,
-            isActive: product.stockQuantity && product.stockQuantity > 0
-          };
-        }
-        return adminProduct;
-      });
-      
-      localStorage.setItem('adminProducts', JSON.stringify(updatedAdminProducts));
-      window.dispatchEvent(new Event('adminProductsUpdated'));
-
-      console.log('✅ Stocks huiles essentielles mis à jour après commande');
-    } catch (error) {
-      console.error('❌ Erreur mise à jour stocks huiles essentielles:', error);
-    }
-  }
-
-  async submitOrder(): Promise<void> {
-    if (this.orderForm.invalid) {
-      this.markFormGroupTouched();
-      this.showNotification('Veuillez corriger les erreurs dans le formulaire');
-      return;
-    }
-
-    if (this.cart.length === 0) {
-      this.showNotification('Votre panier est vide!');
-      return;
-    }
-
-    const stockErrors = this.checkStockBeforeOrder();
-    if (stockErrors.length > 0) {
-      this.showNotification(stockErrors[0]);
-      return;
-    }
-
-    this.isSubmittingOrder = true;
-
-    try {
-      const orderData = this.prepareOrderData();
-      const validationErrors = this.validateOrderData(orderData);
-      if (validationErrors.length > 0) {
-        throw new Error(validationErrors.join(', '));
-      }
-
-      const orderNumber = 'CMD-HE-' + Date.now();
-
-      let apiResponse = null;
-      try {
-        apiResponse = await this.sendOrderToAPI(orderData);
-        console.log('✅ Commande huiles essentielles envoyée à l\'API principale:', apiResponse);
-      } catch (apiError) {
-        console.warn('⚠️ API principale non disponible, utilisation du système local', apiError);
-      }
-
-      this.saveOrderToAdminSystem(orderData, orderNumber);
-      await this.sendAdminNotification(orderData, orderNumber);
-      this.updateStockAfterOrder(orderData.orderItems);
-      this.saveOrderToLocalStorage(orderData, orderNumber, apiResponse);
-
-      this.showNotification(`Commande d'huiles essentielles confirmée! Numéro: ${orderNumber}`);
-      
-      this.cart = [];
-      this.saveCart();
-      this.showCheckoutSection = false;
-      this.orderForm.reset({
-        paymentMethod: 'delivery'
-      });
-      document.body.classList.remove('modal-open');
-
-      setTimeout(() => {
-        this.router.navigate(['/huiles-essentielles']);
-      }, 2000);
-
-    } catch (error: any) {
-      console.error('❌ Erreur lors de la création de la commande huiles essentielles:', error);
-      this.showNotification(`Erreur: ${error.message}`);
-    } finally {
-      this.isSubmittingOrder = false;
-    }
-  }
-
-  private saveOrderToLocalStorage(orderData: any, orderNumber: string, apiResponse: any): void {
-    try {
-      const localOrder = {
-        ...orderData,
-        orderNumber: orderNumber,
-        apiResponse: apiResponse,
-        submittedAt: new Date().toISOString(),
-        localBackup: true
-      };
-
-      const orders = JSON.parse(localStorage.getItem('huilesEssentiellesOrders') || '[]');
-      orders.push(localOrder);
-      localStorage.setItem('huilesEssentiellesOrders', JSON.stringify(orders));
-
-      console.log('✅ Commande huiles essentielles sauvegardée localement');
-    } catch (error) {
-      console.error('❌ Erreur sauvegarde locale:', error);
-    }
-  }
-
-  private markFormGroupTouched(): void {
-    Object.keys(this.orderForm.controls).forEach(key => {
-      this.orderForm.get(key)?.markAsTouched();
-    });
-  }
-
   // ==================== NEWSLETTER ====================
 
   subscribeNewsletter(): void {
     if (this.isValidEmail(this.email)) {
-      console.log('Email inscrit à la newsletter huiles essentielles:', this.email);
-      
+      console.log('Email inscrit à la newsletter:', this.email);
       this.newsletterSubmitted = true;
       const promoCode = this.generatePromoCode();
-      
-      this.showNotification(`Merci pour votre inscription ! Code promo: ${promoCode}`);
-      
+      this.showNotification(`Merci ! Code promo: ${promoCode}`);
       this.email = '';
-      
       setTimeout(() => {
         this.newsletterSubmitted = false;
       }, 5000);
-      
     } else {
       this.showNotification('Veuillez entrer une adresse email valide');
     }
@@ -1086,7 +1144,7 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
 
   generatePromoCode(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let promoCode = 'ESSENCE15';
+    let promoCode = 'BIENVENUE';
     for (let i = 0; i < 4; i++) {
       promoCode += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -1098,56 +1156,147 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
     return emailRegex.test(email) && email.length > 0;
   }
 
-  // ==================== MÉTHODES UTILITAIRES ====================
+  // ==================== LANGUE ET NAVIGATION ====================
 
-  showNotification(message: string): void {
-    if (this.notificationTimeout) {
-      clearTimeout(this.notificationTimeout);
+  changeLanguage(lang: string): void {
+    this.currentLanguage = lang;
+    localStorage.setItem('preferredLanguage', lang);
+    this.showLanguageMenu = false;
+    
+    if (lang === 'en') {
+      this.heroTitle = 'Create a warm atmosphere in your home';
+      this.heroDescription = 'Discover our pure and natural essential oils, crafted by hand. Transform your interior into a true haven of peace and well-being.';
+      this.catalogTitle = 'Our Pure Essential Oils';
+      this.featuresTitle = 'The excellence of nature';
+      this.servicesTitle = 'Our Commitments';
+      this.ctaTitle = 'Get exclusive offers';
+      this.ctaDescription = 'Join our community and be the first to know about our new products and special offers.';
+    } else if (lang === 'ar') {
+      this.heroTitle = 'أنشئ جوًا دافئًا في منزلك';
+      this.heroDescription = 'اكتشف زيوتنا الأساسية النقية والطبيعية المصنوعة يدوياً.';
+      this.catalogTitle = 'زيوتنا الأساسية النقية';
+      this.featuresTitle = 'تميز الطبيعة';
+      this.servicesTitle = 'تعهداتنا';
+      this.ctaTitle = 'احصل على عروض حصرية';
+      this.ctaDescription = 'انضم إلى مجتمعنا وكن أول من يعرف عن منتجاتنا الجديدة وعروضنا الخاصة.';
+    } else {
+      this.heroTitle = 'Créez une atmosphère chaleureuse dans votre maison';
+      this.heroDescription = 'Découvrez nos huiles essentielles pures et naturelles créées artisanalement.';
+      this.catalogTitle = 'Nos Huiles Essentielles Pures';
+      this.featuresTitle = 'L\'excellence du naturel';
+      this.servicesTitle = 'Nos Engagements';
+      this.ctaTitle = 'Recevez des offres exclusives';
+      this.ctaDescription = 'Rejoignez notre communauté et soyez les premiers informés de nos nouveautés et offres spéciales.';
     }
-
-    this.notificationMessage = message;
-    this.notificationShow = true;
-
-    this.notificationTimeout = setTimeout(() => {
-      this.notificationShow = false;
-      setTimeout(() => {
-        this.notificationMessage = '';
-      }, 300);
-    }, 3000);
   }
 
-  openSocial(platform: string): void {
-    const urls: { [key: string]: string } = {
-      facebook: 'https://facebook.com/huilesessentielles',
-      twitter: 'https://twitter.com/huilesessentielles',
-      pinterest: 'https://pinterest.com/huilesessentielles',
-      instagram: 'https://instagram.com/huilesessentielles'
+  translate(key: string): string {
+    const translations: any = {
+      'home': { fr: 'Accueil', en: 'Home', ar: 'الرئيسية' },
+      'products': { fr: 'Produits', en: 'Products', ar: 'المنتجات' },
+      'about': { fr: 'À propos', en: 'About', ar: 'من نحن' },
+      'contact': { fr: 'Contact', en: 'Contact', ar: 'اتصل بنا' },
+      'menu': { fr: 'Menu', en: 'Menu', ar: 'القائمة' },
+      'search': { fr: 'Rechercher...', en: 'Search...', ar: 'بحث...' }
     };
     
-    if (urls[platform]) {
-      window.open(urls[platform], '_blank', 'noopener,noreferrer');
+    const translation = translations[key];
+    if (!translation) return key;
+    
+    switch (this.currentLanguage) {
+      case 'en': return translation.en;
+      case 'ar': return translation.ar || translation.fr;
+      default: return translation.fr;
     }
   }
 
-  // ==================== SYNCHRONISATION ====================
-
-  syncWithAdmin(): void {
-    console.log('🔄 Synchronisation manuelle huiles essentielles avec l\'admin');
-    this.refreshFromAdmin();
+  toggleLanguageMenu(): void {
+    this.showLanguageMenu = !this.showLanguageMenu;
   }
 
-  forceSyncFromAdmin(): void {
-    console.log('🔄 Forcer la synchronisation huiles essentielles depuis l\'admin');
-    this.isLoadingProducts = true;
-    
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
+    if (this.mobileMenuOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+  }
+
+  closeMobileMenu(): void {
+    this.mobileMenuOpen = false;
+    this.mobileSubmenuOpen = false;
+    document.body.classList.remove('modal-open');
+  }
+
+  toggleMobileSubmenu(): void {
+    this.mobileSubmenuOpen = !this.mobileSubmenuOpen;
+  }
+
+  navigateTo(route: string): void {
+    this.closeMobileMenu();
     setTimeout(() => {
-      this.loadProductsFromAdmin();
-      this.showNotification('Synchronisation forcée depuis l\'administration');
-    }, 500);
+      this.router.navigate([route]);
+    }, 300);
   }
 
-  canAddToCart(product: Product): boolean {
-    return (product.stockQuantity || 0) > 0;
+  scrollToSection(sectionId: string): void {
+    this.closeMobileMenu();
+    setTimeout(() => {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 300);
+  }
+
+  // ==================== ÉCOUTEURS ====================
+
+  private setupEventListeners(): void {
+    setInterval(() => {
+      this.loadProductsFromAdmin();
+      this.loadCouponsFromAdmin();
+    }, 120000);
+  }
+
+  private setupAdminUpdateListener(): void {
+    window.addEventListener('adminProductsUpdated', () => {
+      console.log('🔄 Mise à jour produits admin reçue');
+      setTimeout(() => {
+        this.loadProductsFromAdmin();
+      }, 1000);
+    });
+
+    window.addEventListener('adminCouponsUpdated', (event: any) => {
+      console.log('🎫 Mise à jour coupons admin reçue:', event.detail);
+      setTimeout(() => {
+        this.loadCouponsFromAdmin();
+        
+        if (event.detail && this.appliedCoupon && event.detail.couponCode === this.appliedCoupon.code) {
+          this.appliedCoupon.usedCount = event.detail.newCount;
+        }
+      }, 500);
+    });
+  }
+
+  private setupKeyboardListeners(): void {
+    this.keydownListener = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (this.showProductOverlay) {
+          this.closeProductOverlay();
+        }
+        if (this.cartVisible) {
+          this.toggleCart();
+        }
+        if (this.showCheckoutSection) {
+          this.closeCheckout();
+        }
+        if (this.mobileMenuOpen) {
+          this.closeMobileMenu();
+        }
+      }
+    };
+    document.addEventListener('keydown', this.keydownListener);
   }
 
   @HostListener('document:keydown.escape')
@@ -1159,10 +1308,32 @@ export class HuilesEssentiellesComponent implements OnInit, OnDestroy {
       this.toggleCart();
     }
     if (this.showCheckoutSection) {
-      this.showCheckoutSection = false;
+      this.closeCheckout();
     }
     if (this.mobileMenuOpen) {
       this.closeMobileMenu();
     }
+  }
+
+  refreshFromAdmin(): void {
+    console.log('🔄 Rechargement forcé depuis l\'admin');
+    this.isLoadingProducts = true;
+    setTimeout(() => {
+      this.loadProductsFromAdmin();
+      this.showNotification('Produits huiles essentielles rechargés');
+    }, 500);
+  }
+
+  syncWithAdmin(): void {
+    this.refreshFromAdmin();
+  }
+
+  forceSyncFromAdmin(): void {
+    this.isLoadingProducts = true;
+    localStorage.removeItem('huilesEssentiellesProducts');
+    setTimeout(() => {
+      this.loadProductsFromAdmin();
+      this.showNotification('Synchronisation forcée terminée');
+    }, 500);
   }
 }

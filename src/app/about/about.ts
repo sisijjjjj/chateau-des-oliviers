@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
@@ -16,6 +16,7 @@ export class AboutComponent implements OnInit {
   mobileSubmenuOpen = false;
   cartItemCount = 0;
   isDarkMode = false;
+  showLanguageMenu = false;
 
   translations = {
     fr: {
@@ -23,10 +24,7 @@ export class AboutComponent implements OnInit {
       'products': 'Produits',
       'about': 'À Propos',
       'contact': 'Contact',
-      'address': '123 Rue de l\'Olivier, Tunis 1000',
-      'phone': '+216 12 345 678',
-      'email': 'contact@olivegrove.tn',
-      'rights': 'Tous droits réservés',
+      'search': 'Rechercher...',
       'heroTitle': 'Notre Histoire',
       'heroSubtitle': 'De la terre à votre maison, l\'authenticité tunisienne',
       'introTitle': 'Qui Sommes-Nous ?',
@@ -64,20 +62,29 @@ export class AboutComponent implements OnInit {
       'ctaTitle': 'Découvrez Notre Collection',
       'ctaSubtitle': 'Laissez les produits naturels transformer votre routine quotidienne en une expérience exceptionnelle',
       'ctaButton': 'Voir Nos Produits',
-      'footerAddress': '123 Rue de l\'Olivier, Tunis 1000',
-      'footerPhone': '+216 12 345 678',
-      'footerEmail': 'contact@olivegrove.tn',
-      'footerRights': 'Tous droits réservés'
+      'footerBrand': 'Byomas',
+      'footerDescription': 'Depuis 3 générations, nous produisons des huiles d\'olive d\'exception avec passion et respect pour la nature, en sélectionnant les meilleures olives de Tunisie.',
+      'collectionsTitle': 'Nos Collections',
+      'collection1': 'Huile Extra Vierge',
+      'collection2': 'Huile Vierge',
+      'collection3': 'Huile Pure/Raffinée',
+      'collection4': 'Huiles Aromatisées',
+      'collection5': 'Savons Naturels',
+      'infoTitle': 'Informations',
+      'info1': 'Notre Histoire',
+      'info2': 'Engagements',
+      'info3': 'Livraison & Retours',
+      'info4': 'Contact',
+      'info5': 'FAQ',
+      'supportTitle': 'Contact & Support',
+      'copyright': '© 2024 BIPUNICA Huiles d\'Olive. Tous droits réservés. | Mentions légales | Politique de confidentialité'
     },
     en: {
       'home': 'Home',
       'products': 'Products',
       'about': 'About',
       'contact': 'Contact',
-      'address': '123 Olive Tree Street, Tunis 1000',
-      'phone': '+216 12 345 678',
-      'email': 'contact@olivegrove.tn',
-      'rights': 'All rights reserved',
+      'search': 'Search...',
       'heroTitle': 'Our Story',
       'heroSubtitle': 'From earth to your home, Tunisian authenticity',
       'introTitle': 'Who Are We?',
@@ -115,20 +122,29 @@ export class AboutComponent implements OnInit {
       'ctaTitle': 'Discover Our Collection',
       'ctaSubtitle': 'Let natural products transform your daily routine into an exceptional experience',
       'ctaButton': 'View Our Products',
-      'footerAddress': '123 Olive Tree Street, Tunis 1000',
-      'footerPhone': '+216 12 345 678',
-      'footerEmail': 'contact@olivegrove.tn',
-      'footerRights': 'All rights reserved'
+      'footerBrand': 'Byomas',
+      'footerDescription': 'For 3 generations, we have been producing exceptional olive oils with passion and respect for nature, selecting the best olives from Tunisia.',
+      'collectionsTitle': 'Our Collections',
+      'collection1': 'Extra Virgin Olive Oil',
+      'collection2': 'Virgin Olive Oil',
+      'collection3': 'Pure/Refined Oil',
+      'collection4': 'Flavored Oils',
+      'collection5': 'Natural Soaps',
+      'infoTitle': 'Information',
+      'info1': 'Our Story',
+      'info2': 'Commitments',
+      'info3': 'Delivery & Returns',
+      'info4': 'Contact',
+      'info5': 'FAQ',
+      'supportTitle': 'Contact & Support',
+      'copyright': '© 2024 BIPUNICA Olive Oils. All rights reserved. | Legal Notice | Privacy Policy'
     },
     ar: {
       'home': 'الرئيسية',
       'products': 'المنتجات',
       'about': 'من نحن',
       'contact': 'اتصل بنا',
-      'address': '123 شارع الزيتون، تونس 1000',
-      'phone': '+216 12 345 678',
-      'email': 'contact@olivegrove.tn',
-      'rights': 'جميع الحقوق محفوظة',
+      'search': 'بحث...',
       'heroTitle': 'قصتنا',
       'heroSubtitle': 'من الأرض إلى بيتك، الأصالة التونسية',
       'introTitle': 'من نحن؟',
@@ -166,19 +182,35 @@ export class AboutComponent implements OnInit {
       'ctaTitle': 'اكتشف تشكيلتنا',
       'ctaSubtitle': 'دع المنتجات الطبيعية تحول روتينك اليومي إلى تجربة استثنائية',
       'ctaButton': 'شاهد منتجاتنا',
-      'footerAddress': '123 شارع الزيتون، تونس 1000',
-      'footerPhone': '+216 12 345 678',
-      'footerEmail': 'contact@olivegrove.tn',
-      'footerRights': 'جميع الحقوق محفوظة'
+      'footerBrand': 'بيوماس',
+      'footerDescription': 'منذ 3 أجيال، ننتج زيت الزيتون الاستثنائي بشغف واحترام للطبيعة، باختيار أفضل الزيتون من تونس.',
+      'collectionsTitle': 'مجموعاتنا',
+      'collection1': 'زيت زيتون بكر ممتاز',
+      'collection2': 'زيت زيتون بكر',
+      'collection3': 'زيت نقي/مكرر',
+      'collection4': 'زيوت منكهة',
+      'collection5': 'صابون طبيعي',
+      'infoTitle': 'معلومات',
+      'info1': 'قصتنا',
+      'info2': 'التزاماتنا',
+      'info3': 'التوصيل والإرجاع',
+      'info4': 'اتصل بنا',
+      'info5': 'الأسئلة الشائعة',
+      'supportTitle': 'اتصل بنا والدعم',
+      'copyright': '© 2024 بيبونيكا لزيوت الزيتون. جميع الحقوق محفوظة. | إشعار قانوني | سياسة الخصوصية'
     }
   };
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.initializeApp();
     this.setupScrollAnimations();
     this.setupScrollProgress();
+    this.updateAllContent();
   }
 
   private initializeApp(): void {
@@ -214,7 +246,6 @@ export class AboutComponent implements OnInit {
         progress = 100;
         clearInterval(interval);
         
-        // Masquer l'écran de chargement
         setTimeout(() => {
           const loadingScreen = document.getElementById('loadingScreen');
           if (loadingScreen) {
@@ -259,7 +290,6 @@ export class AboutComponent implements OnInit {
         scrollProgress.style.width = `${scrolled}%`;
       }
       
-      // Afficher/masquer le bouton "Retour en haut"
       const backToTop = document.getElementById('backToTop');
       if (backToTop) {
         if (window.scrollY > 300) {
@@ -276,19 +306,6 @@ export class AboutComponent implements OnInit {
     this.closeMobileMenu();
   }
 
-  changeLanguage(lang: string): void {
-    this.currentLanguage = lang;
-    localStorage.setItem('preferredLanguage', lang);
-    this.updateTextContent();
-  }
-
-  onLanguageChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    if (target && target.value) {
-      this.changeLanguage(target.value);
-    }
-  }
-
   get textDirection(): string {
     return this.currentLanguage === 'ar' ? 'rtl' : 'ltr';
   }
@@ -298,23 +315,41 @@ export class AboutComponent implements OnInit {
     return translation ? translation[key as keyof typeof translation] : key;
   }
 
+  updateAllContent(): void {
+    // Mettre à jour la direction du texte
+    document.body.style.direction = this.textDirection;
+    document.documentElement.setAttribute('dir', this.textDirection);
+    document.documentElement.setAttribute('lang', this.currentLanguage);
+    
+    // Mettre à jour tous les éléments avec des IDs
+    this.updateTextContent();
+    
+    // Mettre à jour les éléments du header et footer qui utilisent translate()
+    this.updateDynamicContent();
+    
+    // Forcer la détection des changements
+    this.cdr.detectChanges();
+  }
+
   private updateTextContent(): void {
-    // Mettre à jour tous les textes avec les traductions
     const elementsToUpdate = [
-      { id: 'homeLink', key: 'home' },
-      { id: 'productsLink', key: 'products' },
-      { id: 'aboutLink', key: 'about' },
-      { id: 'contactLink', key: 'contact' },
+      // Hero section
       { id: 'heroTitle', key: 'heroTitle' },
       { id: 'heroSubtitle', key: 'heroSubtitle' },
+      
+      // Introduction section
       { id: 'introTitle', key: 'introTitle' },
       { id: 'introDescription', key: 'introDescription' },
       { id: 'signatureText', key: 'signatureText' },
+      
+      // Story section
       { id: 'storyTitle', key: 'storyTitle' },
       { id: 'storyDescription', key: 'storyDescription' },
       { id: 'milestone1', key: 'milestone1' },
       { id: 'milestone2', key: 'milestone2' },
       { id: 'milestone3', key: 'milestone3' },
+      
+      // Different section
       { id: 'differentTitle', key: 'differentTitle' },
       { id: 'differentSubtitle', key: 'differentSubtitle' },
       { id: 'card1Title', key: 'card1Title' },
@@ -325,6 +360,8 @@ export class AboutComponent implements OnInit {
       { id: 'card3Text', key: 'card3Text' },
       { id: 'card4Title', key: 'card4Title' },
       { id: 'card4Text', key: 'card4Text' },
+      
+      // Commitment section
       { id: 'commitmentTitle', key: 'commitmentTitle' },
       { id: 'commitment1Title', key: 'commitment1Title' },
       { id: 'commitment1Text', key: 'commitment1Text' },
@@ -335,17 +372,35 @@ export class AboutComponent implements OnInit {
       { id: 'visual1Title', key: 'visual1Title' },
       { id: 'visual2Title', key: 'visual2Title' },
       { id: 'visual3Title', key: 'visual3Title' },
+      
+      // Vision section
       { id: 'visionTitle', key: 'visionTitle' },
       { id: 'visionText', key: 'visionText' },
       { id: 'missionTitle', key: 'missionTitle' },
       { id: 'missionText', key: 'missionText' },
+      
+      // CTA section
       { id: 'ctaTitle', key: 'ctaTitle' },
       { id: 'ctaSubtitle', key: 'ctaSubtitle' },
       { id: 'ctaButton', key: 'ctaButton' },
-      { id: 'footerAddress', key: 'footerAddress' },
-      { id: 'footerPhone', key: 'footerPhone' },
-      { id: 'footerEmail', key: 'footerEmail' },
-      { id: 'footerRights', key: 'footerRights' }
+      
+      // Footer
+      { id: 'footerBrand', key: 'footerBrand' },
+      { id: 'footerDescription', key: 'footerDescription' },
+      { id: 'collectionsTitle', key: 'collectionsTitle' },
+      { id: 'collection1', key: 'collection1' },
+      { id: 'collection2', key: 'collection2' },
+      { id: 'collection3', key: 'collection3' },
+      { id: 'collection4', key: 'collection4' },
+      { id: 'collection5', key: 'collection5' },
+      { id: 'infoTitle', key: 'infoTitle' },
+      { id: 'info1', key: 'info1' },
+      { id: 'info2', key: 'info2' },
+      { id: 'info3', key: 'info3' },
+      { id: 'info4', key: 'info4' },
+      { id: 'info5', key: 'info5' },
+      { id: 'supportTitle', key: 'supportTitle' },
+      { id: 'copyright', key: 'copyright' }
     ];
 
     elementsToUpdate.forEach(({ id, key }) => {
@@ -354,9 +409,18 @@ export class AboutComponent implements OnInit {
         element.textContent = this.translate(key);
       }
     });
+  }
 
-    // Mettre à jour la direction du texte
-    document.body.setAttribute('dir', this.textDirection);
+  private updateDynamicContent(): void {
+    // Mettre à jour le placeholder de recherche
+    const searchInput = document.querySelector('.search-input') as HTMLInputElement;
+    if (searchInput) {
+      searchInput.placeholder = this.translate('search');
+    }
+    
+    // Mettre à jour les liens de navigation (ceux qui utilisent ngIf)
+    const homeLinks = document.querySelectorAll('#homeLinkDesktop, .mobile-nav-link');
+    // Les liens sont gérés par Angular via translate() dans le template
   }
 
   toggleDarkMode(force?: boolean): void {
@@ -368,12 +432,6 @@ export class AboutComponent implements OnInit {
     } else {
       document.body.classList.remove('dark-mode');
       localStorage.setItem('theme', 'light');
-    }
-
-    // Mettre à jour l'icône du bouton
-    const themeIcon = document.querySelector('#themeToggle i');
-    if (themeIcon) {
-      themeIcon.className = this.isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
     }
   }
 
@@ -399,12 +457,10 @@ export class AboutComponent implements OnInit {
   }
 
   toggleCart(): void {
-    // Simulation d'ajout au panier
     this.cartItemCount++;
     localStorage.setItem('cartItemCount', this.cartItemCount.toString());
     
-    // Animation du panier
-    const cartBtn = document.getElementById('cartBtn');
+    const cartBtn = document.querySelector('.cart-icon');
     if (cartBtn) {
       cartBtn.classList.add('pulse');
       setTimeout(() => {
@@ -428,13 +484,52 @@ export class AboutComponent implements OnInit {
     this.closeMobileMenu();
   }
 
+  toggleLanguageMenu(): void {
+    this.showLanguageMenu = !this.showLanguageMenu;
+  }
+
+  changeLanguage(lang: string): void {
+    if (this.currentLanguage === lang) {
+      this.showLanguageMenu = false;
+      return;
+    }
+    
+    this.currentLanguage = lang;
+    localStorage.setItem('preferredLanguage', lang);
+    this.showLanguageMenu = false;
+    
+    // Mettre à jour tout le contenu
+    this.updateAllContent();
+    
+    // Ajouter un effet visuel pour le changement de langue
+    this.addLanguageTransitionEffect();
+  }
+
+  private addLanguageTransitionEffect(): void {
+    const container = document.querySelector('.about-hero');
+    if (container) {
+      container.classList.add('language-transition');
+      setTimeout(() => {
+        container.classList.remove('language-transition');
+      }, 300);
+    }
+  }
+
   @HostListener('document:keydown.escape')
   onEscapePress(): void {
     this.closeMobileMenu();
   }
 
-  @HostListener('window:scroll')
-  onWindowScroll(): void {
-    // Gestion supplémentaire du défilement si nécessaire
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    // Fermer le menu langue si on clique en dehors
+    const languageIcon = document.querySelector('.language-icon');
+    const languageDropdown = document.querySelector('.language-dropdown');
+    
+    if (this.showLanguageMenu && languageIcon && languageDropdown) {
+      if (!languageIcon.contains(event.target as Node) && !languageDropdown.contains(event.target as Node)) {
+        this.showLanguageMenu = false;
+      }
+    }
   }
 }

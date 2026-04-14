@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "byomas": {
+    "chateau-des-oliviers": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -18,7 +18,7 @@
             "tsConfig": "tsconfig.app.json",
             "assets": [{"glob": "**/*", "input": "public"}],
             "styles": ["src/styles.css"],
-            "outputPath": "dist/byomas/browser"
+            "outputPath": "dist/chateau-des-oliviers/browser"
           },
           "configurations": {
             "production": {
@@ -41,8 +41,8 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "configurations": {
-            "production": {"buildTarget": "byomas:build:production"},
-            "development": {"buildTarget": "byomas:build:development"}
+            "production": {"buildTarget": "chateau-des-oliviers:build:production"},
+            "development": {"buildTarget": "chateau-des-oliviers:build:development"}
           },
           "defaultConfiguration": "development"
         },

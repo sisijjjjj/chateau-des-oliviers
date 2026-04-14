@@ -4,7 +4,6 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { Observable } from 'rxjs';
 
 interface Product {
   id: number;
@@ -39,6 +38,7 @@ interface Product {
   benefits?: string[];
   type?: string;
   couponDiscount?: number;
+  showLanguageMenu?: any;
 }
 
 interface Service {
@@ -175,23 +175,23 @@ interface Coupon {
   styleUrls: ['./soin.css']
 })
 export class SoinComponent implements OnInit, OnDestroy {
-  // Images spécifiques
+  toggleLanguageMenu() {
+    console.log('Menu langue basculé');
+    this.showLanguageMenu = !this.showLanguageMenu;
+  }
+
   headerLogo = 'https://i.ibb.co/dJWtX7S9/unnamed.jpg';
   heroImage = 'https://i.ibb.co/xqcSR8md/unnamed-1.jpg';
   
-  // Contenu dynamique
   heroTitle = 'Votre Beauté, Notre Passion Naturelle';
   heroDescription = 'Découvrez notre gamme de soins naturels élaborés avec des ingrédients purs pour sublimer votre peau et vos cheveux. La beauté authentique commence ici.';
   
-  // Features Section
   featuresImage = 'https://i.pinimg.com/736x/37/a2/ac/37a2ac09f00a4bfb35c1e519dfba74e2.jpg';
   featuresTitle = 'L\'excellence du soin naturel';
 
-  // Products Section
   catalogTitle = 'Notre Collection Soin';
   catalogDescription = 'Des produits naturels et efficaces pour chaque besoin de votre peau et vos cheveux';
   
-  // Services Section
   servicesTitle = 'Nos Engagements Soin';
   services: Service[] = [
     {
@@ -214,21 +214,17 @@ export class SoinComponent implements OnInit, OnDestroy {
     }
   ];
 
-  // CTA Section
   ctaImage = 'https://i.pinimg.com/736x/15/af/16/15af165eaa323813e82542940a33c721.jpg';
   ctaTitle = '15% de réduction sur votre première commande de soins';
   ctaDescription = 'Rejoignez notre communauté et bénéficiez d\'un code promo exclusif pour vos premiers soins naturels.';
   
-  // Newsletter
   email = '';
   newsletterSubmitted = false;
 
-  // Cart
   cartItemCount = 0;
   cart: CartItem[] = [];
   cartVisible = false;
 
-  // Checkout
   showCheckout = false;
   showCheckoutSection = false;
   orderForm: FormGroup;
@@ -239,7 +235,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     'Sousse', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan'
   ];
 
-  // Product Modal
   showProductOverlay = false;
   showProductModal = false;
   expandedProductId: number | null = null;
@@ -247,12 +242,11 @@ export class SoinComponent implements OnInit, OnDestroy {
   selectedQuantity: number = 1;
   mainModalImage: string = '';
 
-  // Mobile Menu et Langue
   mobileMenuOpen: boolean = false;
   mobileSubmenuOpen = false;
   currentLanguage: string = 'fr';
+  showLanguageMenu: boolean = false;
 
-  // Notification properties
   notification: Notification = {
     show: false,
     type: 'success',
@@ -264,56 +258,47 @@ export class SoinComponent implements OnInit, OnDestroy {
   notificationShow: boolean = false;
   private notificationTimeout: any;
 
-  // Loading state
   isSubmittingOrder: boolean = false;
   isLoadingProducts: boolean = true;
 
-  // Keyboard event listener
   private keydownListener: any;
+  private expiryCheckInterval: any;
 
-  // API URL
   private readonly API_URL = 'http://localhost:8080/api';
   private readonly ADMIN_NOTIFICATION_URL = 'http://localhost:8080/api/admin/notifications';
 
-  // Produits
   products: Product[] = [];
   
-  // Filtres et recherche
   searchTerm: string = '';
   activeFilter: string = 'all';
   subFilter: string = 'all';
   filteredProducts: Product[] = [];
   favoriteProducts: number[] = [];
   
-  // Pagination
   currentPage: number = 1;
   productsPerPage: number = 9;
   totalPages: number = 1;
   
-  // Slider
   currentSlide: number = 0;
   private slideInterval: any;
   
-  // Admin
   showAdminButton: boolean = false;
   filteringStats: any = null;
 
-  // User menu
   userMenuOpen: boolean = false;
-
-  // Variable pour contrôler l'affichage de la console
   showAdviceConsoleSection = false;
 
-  // Commandes
   orders: CustomerOrder[] = [];
 
-  // Coupons
+  // ==================== PROPRIÉTÉS COUPONS ====================
   couponDiscounts: {[productId: number]: number} = {};
   activeCoupons: Coupon[] = [];
   appliedCouponsInCart: string[] = [];
   couponCodeInput: string = '';
 
-  // Produits par défaut (fallback)
+  // Historique des restaurations
+  private restorationHistory: {timestamp: string, action: string, coupons: number}[] = [];
+
   private defaultProducts: Product[] = [
     {
       id: 1,
@@ -390,6 +375,7 @@ export class SoinComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private http: HttpClient
   ) {
+    // Suppression du champ paymentMethod car uniquement paiement à la livraison
     this.orderForm = this.fb.group({
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
@@ -398,9 +384,8 @@ export class SoinComponent implements OnInit, OnDestroy {
       city: ['', [Validators.required, Validators.minLength(2)]],
       phone: ['', [Validators.required, Validators.pattern(/^[0-9]{8}$/)]],
       email: ['', [Validators.email]],
-      notes: [''],
-      paymentMethod: ['delivery', Validators.required],
-      couponCode: ['']
+      notes: ['']
+      // Suppression de paymentMethod
     });
     this.orders = [];
   }
@@ -408,36 +393,21 @@ export class SoinComponent implements OnInit, OnDestroy {
   // ==================== LIFECYCLE HOOKS ====================
 
   ngOnInit(): void {
-    // Charger la langue préférée
     const savedLang = localStorage.getItem('preferredLanguage');
     if (savedLang) {
       this.currentLanguage = savedLang;
     }
     
-    // Charger les favoris
     this.loadFavorites();
-    
-    // Charger les produits
     this.loadProductsFromAdminAuto();
-    
-    // Charger le panier
     this.loadCart();
-    
-    // Initialiser les coupons - IMPORTANT: remplacé par initCoupons()
-    this.initCoupons();
-    
-    // Vérifier admin
+    this.loadCouponsFromAdmin();
     this.checkAdminStatus();
-    
-    // Setup listeners
     this.setupEventListeners();
     this.setupKeyboardListeners();
     this.setupAdminUpdateListener();
-    
-    // Démarrer slider
     this.startSlider();
     
-    // Synchroniser les commandes en attente avec l'admin
     setTimeout(() => {
       this.syncPendingOrdersWithAdmin();
     }, 2000);
@@ -455,484 +425,208 @@ export class SoinComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ==================== GESTION DES COUPONS - CODE CORRIGÉ ====================
+  // ==================== GESTION DES COUPONS ====================
 
-  /**
-   * Initialiser les coupons
-   */
-  private initCoupons(): void {
-    console.log('🎟️ Initialisation des coupons...');
-    
-    // Vérifier et corriger les données coupon
-    this.checkAndFixCouponData();
-    
-    // Charger les coupons
-    this.loadCouponsFromAdmin();
-  }
-
-  /**
-   * Charger les coupons depuis l'admin
-   */
   loadCouponsFromAdmin(): void {
-    console.log('🔄 Chargement des coupons depuis l\'admin...');
+    console.log('🔄 Chargement des coupons depuis admin...');
     
-    // Réinitialiser les réductions
     this.couponDiscounts = {};
     this.activeCoupons = [];
     
-    // 1. D'abord chercher dans soinCoupons (stockage dédié)
-    const soinCoupons = localStorage.getItem('soinCoupons');
-    
-    if (soinCoupons) {
-      try {
-        const coupons: Coupon[] = JSON.parse(soinCoupons);
-        if (coupons.length > 0) {
-          console.log(`✅ ${coupons.length} coupons soin chargés depuis stockage local`);
-          this.activeCoupons = this.filterValidCoupons(coupons);
-          this.applyCouponsToProducts();
-          return;
-        }
-      } catch (error) {
-        console.error('❌ Erreur parsing soin coupons:', error);
-      }
-    }
-    
-    // 2. Sinon, charger depuis adminCoupons
     const adminCoupons = localStorage.getItem('adminCoupons');
     
-    if (adminCoupons) {
-      try {
-        const allCoupons: Coupon[] = JSON.parse(adminCoupons);
+    if (!adminCoupons) {
+      console.log('ℹ️ Aucun coupon trouvé dans adminCoupons');
+      return;
+    }
+    
+    try {
+      const allCoupons: Coupon[] = JSON.parse(adminCoupons);
+      console.log(`📊 ${allCoupons.length} coupons trouvés dans adminCoupons`);
+      
+      const now = new Date();
+      const validCoupons = allCoupons.filter(coupon => {
+        if (!coupon.isActive) return false;
         
-        // Filtrer uniquement les coupons applicables aux soins
-        const soinCoupons = allCoupons.filter(coupon => 
-          this.isCouponApplicableToSoin(coupon)
-        );
-        
-        if (soinCoupons.length > 0) {
-          console.log(`✅ ${soinCoupons.length} coupons soin filtrés depuis admin`);
-          this.activeCoupons = this.filterValidCoupons(soinCoupons);
-          this.applyCouponsToProducts();
-          
-          // Sauvegarder les coupons filtrés dans soinCoupons pour la prochaine fois
-          localStorage.setItem('soinCoupons', JSON.stringify(soinCoupons));
-          
-          return;
-        } else {
-          console.log('ℹ️ Aucun coupon applicable aux soins trouvé dans l\'admin');
+        if (coupon.validFrom) {
+          const validFrom = new Date(coupon.validFrom);
+          if (now < validFrom) return false;
         }
-      } catch (error) {
-        console.error('❌ Erreur parsing admin coupons:', error);
-      }
-    }
-    
-    // 3. Si rien n'est trouvé
-    console.log('⚠️ Aucun coupon disponible dans l\'admin');
-    this.showNotification('Aucune promotion active pour le moment', 'info');
-  }
-
-  /**
-   * Vérifier si un coupon est applicable aux soins
-   */
-  private isCouponApplicableToSoin(coupon: Coupon): boolean {
-    if (!coupon.isActive) return false;
-    
-    // Vérifier la page applicable
-    if (coupon.applicablePage) {
-      return coupon.applicablePage === 'all' || coupon.applicablePage === 'soin';
-    }
-    
-    // Si pas de page spécifiée, vérifier les catégories
-    if (coupon.applicableCategories && coupon.applicableCategories.length > 0) {
-      const soinCategories = ['soin', 'visage', 'corps', 'cheveux', 'peau', 'skin', 'care'];
-      return coupon.applicableCategories.some(category => 
-        soinCategories.some(soinCat => 
-          category.toLowerCase().includes(soinCat)
-        )
-      );
-    }
-    
-    // Par défaut, accepter si pas de restriction
-    return true;
-  }
-
-  /**
-   * Filtrer les coupons valides (dates, utilisation, etc.)
-   */
-  private filterValidCoupons(coupons: Coupon[]): Coupon[] {
-    const now = new Date();
-    
-    return coupons.filter(coupon => {
-      // Vérifier les dates
-      try {
-        const validFrom = coupon.validFrom ? new Date(coupon.validFrom) : new Date('2000-01-01');
-        const validUntil = coupon.validUntil ? new Date(coupon.validUntil) : new Date('2100-12-31');
         
-        if (now < validFrom || now > validUntil) {
-          return false;
+        if (coupon.validUntil) {
+          const validUntil = new Date(coupon.validUntil);
+          if (now > validUntil) return false;
         }
-      } catch (error) {
-        console.error(`❌ Erreur dates coupon ${coupon.code}:`, error);
-        return false;
+        
+        const hasDiscount = 
+          (coupon.discountPercentage && coupon.discountPercentage > 0) ||
+          (coupon.discountAmount && coupon.discountAmount > 0) ||
+          (coupon.discountValue && coupon.discountValue > 0);
+        
+        if (!hasDiscount) return false;
+        
+        if (coupon.applicablePage) {
+          return coupon.applicablePage === 'all' || coupon.applicablePage === 'soin';
+        }
+        
+        return true;
+      });
+      
+      if (validCoupons.length > 0) {
+        console.log(`✅ ${validCoupons.length} coupons valides trouvés`);
+        this.activeCoupons = validCoupons;
+        this.applyCouponsToProducts();
+      } else {
+        console.log('ℹ️ Aucun coupon valide pour la page soin');
       }
       
-      // Vérifier les limites d'utilisation
-      if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
-        return false;
-      }
-      
-      // Vérifier qu'il a une réduction valide - CRITIQUE À CORRIGER
-      const discountPercentage = coupon.discountPercentage || 0;
-      const discountAmount = coupon.discountAmount || 0;
-      const discountValue = coupon.discountValue || 0;
-      const hasDiscount = discountPercentage > 0 || discountAmount > 0 || discountValue > 0;
-      
-      if (!hasDiscount) {
-        console.log(`⚠️ Coupon ${coupon.code} sans réduction:`, {
-          discountPercentage: coupon.discountPercentage,
-          discountAmount: coupon.discountAmount,
-          discountValue: coupon.discountValue,
-          type: typeof coupon.discountPercentage
-        });
-      }
-      
-      return hasDiscount;
-    });
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des coupons:', error);
+    }
   }
 
-  /**
-   * Appliquer les coupons aux produits
-   */
   private applyCouponsToProducts(): void {
-    console.log(`🎟️ Application de ${this.activeCoupons.length} coupons aux produits...`);
+    console.log(`🎟️ Application des coupons aux produits...`);
     
-    // Réinitialiser les réductions
     this.couponDiscounts = {};
     
-    // Appliquer chaque coupon
+    if (this.activeCoupons.length === 0) {
+      console.log('ℹ️ Aucun coupon actif');
+      return;
+    }
+    
     this.activeCoupons.forEach(coupon => {
       this.applySingleCoupon(coupon);
     });
     
-    // Mettre à jour les badges
     this.updateProductBadgesWithCoupons();
     
-    // Afficher notification si coupons appliqués
-    if (this.activeCoupons.length > 0) {
-      const couponCodes = this.activeCoupons.map(c => c.code).join(', ');
-      console.log(`✅ Coupons appliqués: ${couponCodes}`);
-      this.showNotification(`${this.activeCoupons.length} promotion(s) active(s)`, 'success');
-    }
+    console.log(`✅ ${Object.keys(this.couponDiscounts).length} produits bénéficient de réductions`);
   }
 
-  /**
-   * Appliquer un coupon spécifique
-   */
   private applySingleCoupon(coupon: Coupon): void {
-    console.log(`🎟️ Application du coupon ${coupon.code}...`);
-    
-    const discountValue = coupon.discountPercentage ? 
-      `${coupon.discountPercentage}%` : 
-      coupon.discountAmount ? `${coupon.discountAmount}€` : 
-      `${coupon.discountValue} (valeur)`;
-    
-    console.log(`  Valeur: ${discountValue}`);
-    console.log(`  Type:`, coupon.discountPercentage ? 'pourcentage' : coupon.discountAmount ? 'montant fixe' : 'valeur');
-    
-    // Appliquer selon le type
     if (coupon.applicableProducts && coupon.applicableProducts.length > 0) {
-      console.log('  Type: Produits spécifiques');
-      this.applyCouponToSpecificProducts(coupon);
-    } else if (coupon.applicableCategories && coupon.applicableCategories.length > 0) {
-      console.log('  Type: Catégories');
-      this.applyCouponToCategories(coupon);
-    } else {
-      console.log('  Type: Tous les produits');
-      this.applyCouponToAllProducts(coupon);
-    }
-  }
-
-  /**
-   * Appliquer un coupon à des produits spécifiques
-   */
-  private applyCouponToSpecificProducts(coupon: Coupon): void {
-    if (!coupon.applicableProducts) return;
-    
-    coupon.applicableProducts.forEach(productId => {
-      const product = this.products.find(p => p.id === productId);
-      if (product && this.isProductEligible(product)) {
-        const discount = this.calculateDiscountForProduct(coupon, product);
-        if (discount > 0) {
-          this.couponDiscounts[product.id] = discount;
-          console.log(`  ✅ Appliqué à ${product.name}: -${discount}€`);
+      coupon.applicableProducts.forEach(productId => {
+        const product = this.products.find(p => p.id === productId);
+        if (product && product.isActive !== false) {
+          const discount = this.calculateDiscountForProduct(coupon, product);
+          if (discount > 0) {
+            this.couponDiscounts[product.id] = discount;
+          }
         }
-      }
-    });
-  }
-
-  /**
-   * Appliquer un coupon à des catégories
-   */
-  private applyCouponToCategories(coupon: Coupon): void {
-    if (!coupon.applicableCategories) return;
+      });
+      return;
+    }
     
-    this.products.forEach(product => {
-      if (this.isProductEligible(product)) {
-        // Vérifier si le produit est dans une catégorie applicable
+    if (coupon.applicableCategories && coupon.applicableCategories.length > 0) {
+      this.products.forEach(product => {
+        if (product.isActive === false) return;
+        
         const isInCategory = coupon.applicableCategories!.some(category => {
           const productCategory = (product.category || '').toLowerCase();
           const productSubCategory = (product.subCategory || '').toLowerCase();
           const searchCategory = category.toLowerCase();
           
           return productCategory.includes(searchCategory) ||
-                 productSubCategory.includes(searchCategory) ||
-                 (product.tags && product.tags.some(tag => tag.toLowerCase().includes(searchCategory)));
+                 productSubCategory.includes(searchCategory);
         });
         
         if (isInCategory) {
           const discount = this.calculateDiscountForProduct(coupon, product);
           if (discount > 0) {
             this.couponDiscounts[product.id] = discount;
-            console.log(`  ✅ Appliqué à ${product.name} (${product.category}): -${discount}€`);
           }
         }
-      }
-    });
-  }
-
-  /**
-   * Appliquer un coupon à tous les produits
-   */
-  private applyCouponToAllProducts(coupon: Coupon): void {
+      });
+      return;
+    }
+    
     this.products.forEach(product => {
-      if (this.isProductEligible(product)) {
-        const discount = this.calculateDiscountForProduct(coupon, product);
-        if (discount > 0) {
-          this.couponDiscounts[product.id] = discount;
-          console.log(`  ✅ Appliqué à ${product.name}: -${discount}€`);
-        }
+      if (product.isActive === false) return;
+      
+      const discount = this.calculateDiscountForProduct(coupon, product);
+      if (discount > 0) {
+        this.couponDiscounts[product.id] = discount;
       }
     });
   }
 
-  /**
-   * Vérifier si un produit est éligible pour une réduction
-   */
-  private isProductEligible(product: Product): boolean {
-    return product.isActive !== false && (product.stockQuantity || 0) > 0;
-  }
-
-  /**
-   * Calculer la réduction pour un produit - VERSION CORRIGÉE
-   */
   private calculateDiscountForProduct(coupon: Coupon, product: Product): number {
     const basePrice = parseFloat(product.price.replace(',', '.'));
     let discount = 0;
     
-    // PRIORITÉ: discountValue, puis discountPercentage, puis discountAmount
-    const discountValue = coupon.discountValue || coupon.discountPercentage || coupon.discountAmount || 0;
-    
-    // Si c'est un pourcentage (valeur < 100 ou propriété discountPercentage existe)
-    if (coupon.discountPercentage || (discountValue > 0 && discountValue <= 100)) {
-      const percentage = coupon.discountPercentage || discountValue;
-      discount = (basePrice * percentage) / 100;
-      console.log(`    Calcul: ${basePrice}€ x ${percentage}% = ${discount}€`);
-    } 
-    // Sinon montant fixe
-    else if (coupon.discountAmount || discountValue > 0) {
-      const amount = coupon.discountAmount || discountValue;
-      discount = amount;
-      console.log(`    Calcul: réduction fixe de ${amount}€`);
+    let discountValue = 0;
+    if (coupon.discountPercentage && coupon.discountPercentage > 0) {
+      discountValue = coupon.discountPercentage;
+    } else if (coupon.discountAmount && coupon.discountAmount > 0) {
+      discountValue = coupon.discountAmount;
+    } else if (coupon.discountValue && coupon.discountValue > 0) {
+      discountValue = coupon.discountValue;
     }
     
-    // Vérifier le montant minimum d'achat
+    if (discountValue < 100 && (coupon.discountPercentage || discountValue < 100)) {
+      discount = (basePrice * discountValue) / 100;
+    } else if (discountValue >= 100) {
+      discount = discountValue;
+    }
+    
     if (coupon.minPurchaseAmount && basePrice < coupon.minPurchaseAmount) {
-      console.log(`    ❌ Prix ${basePrice}€ < minimum ${coupon.minPurchaseAmount}€`);
       return 0;
     }
     
-    // Limiter la réduction au prix du produit
     discount = Math.min(discount, basePrice);
-    discount = parseFloat(discount.toFixed(2));
     
-    return discount;
+    return parseFloat(discount.toFixed(2));
   }
 
-  /**
-   * Mettre à jour les badges des produits avec les coupons
-   */
   private updateProductBadgesWithCoupons(): void {
-    let updatedCount = 0;
-    
     this.products.forEach(product => {
       if (this.couponDiscounts[product.id]) {
         const discount = this.couponDiscounts[product.id];
         const basePrice = parseFloat(product.price.replace(',', '.'));
         const percentage = Math.round((discount / basePrice) * 100);
         
-        // Ne pas écraser les badges spéciaux (Nouveau, Best-seller, etc.)
-        const currentBadge = product.badge || '';
-        if (!currentBadge.includes('Nouveau') && 
-            !currentBadge.includes('Best-seller') && 
-            !currentBadge.includes('Stock') &&
-            !currentBadge.includes('Rupture') &&
-            !currentBadge.includes('Indisponible')) {
+        if (!product.badge || product.badge.includes('🎟️')) {
           product.badge = `🎟️ -${percentage}%`;
-          updatedCount++;
-        } else if (!currentBadge.includes('🎟️')) {
-          // Ajouter le badge coupon aux badges existants
-          product.badge = `${currentBadge} 🎟️ -${percentage}%`;
-          updatedCount++;
+        } else if (!product.badge.includes('🎟️')) {
+          product.badge = `${product.badge} 🎟️ -${percentage}%`;
         }
       }
     });
-    
-    console.log(`🎟️ ${updatedCount} badges mis à jour avec coupons`);
   }
 
-  /**
-   * Obtenir le prix avec réduction coupon
-   */
-  getPriceWithDiscount(product: Product): string {
-    const basePrice = parseFloat(product.price.replace(',', '.'));
-    const discount = this.couponDiscounts[product.id] || 0;
-    const finalPrice = basePrice - discount;
-    
-    return finalPrice.toFixed(2).replace('.', ',');
+  refreshCoupons(): void {
+    console.log('🔄 Rechargement manuel des coupons...');
+    this.loadCouponsFromAdmin();
+    this.showNotification('Promotions rechargées', 'success');
   }
 
-  /**
-   * Vérifier si un produit a une réduction coupon
-   */
+  syncCouponsFromAdmin(): void {
+    this.refreshCoupons();
+  }
+
   hasCouponDiscount(product: Product): boolean {
     return !!this.couponDiscounts[product.id];
   }
 
-  /**
-   * Obtenir le pourcentage de réduction
-   */
+  getPriceWithDiscount(product: Product): string {
+    const basePrice = parseFloat(product.price.replace(',', '.'));
+    const discount = this.couponDiscounts[product.id] || 0;
+    const finalPrice = basePrice - discount;
+    return finalPrice.toFixed(2).replace('.', ',');
+  }
+
   getDiscountPercentage(product: Product): number {
     if (!this.hasCouponDiscount(product)) return 0;
-    
     const basePrice = parseFloat(product.price.replace(',', '.'));
     const discount = this.couponDiscounts[product.id];
-    
     return Math.round((discount / basePrice) * 100);
   }
 
-  /**
-   * Obtenir le montant de la réduction
-   */
   getDiscountAmount(product: Product): number {
     return this.couponDiscounts[product.id] || 0;
   }
 
-  /**
-   * Rafraîchir les coupons manuellement
-   */
-  refreshCoupons(): void {
-    this.loadCouponsFromAdmin();
-    this.showNotification('🎟️ Promotions rechargées', 'success');
-  }
-
-  /**
-   * Synchroniser les coupons depuis l'admin
-   */
-  syncCouponsFromAdmin(): void {
-    console.log('🔄 Synchronisation forcée des coupons depuis l\'admin...');
-    
-    // Effacer le cache local
-    localStorage.removeItem('soinCoupons');
-    
-    // Charger depuis adminCoupons
-    const adminCoupons = localStorage.getItem('adminCoupons');
-    
-    if (adminCoupons) {
-      try {
-        const allCoupons: Coupon[] = JSON.parse(adminCoupons);
-        
-        // Filtrer uniquement les coupons applicables aux soins
-        const soinCoupons = allCoupons.filter(coupon => 
-          this.isCouponApplicableToSoin(coupon)
-        );
-        
-        if (soinCoupons.length > 0) {
-          console.log(`✅ ${soinCoupons.length} coupons synchronisés depuis admin`);
-          this.activeCoupons = this.filterValidCoupons(soinCoupons);
-          this.applyCouponsToProducts();
-          
-          // Sauvegarder les coupons filtrés
-          localStorage.setItem('soinCoupons', JSON.stringify(soinCoupons));
-          
-          this.showNotification(`${soinCoupons.length} coupons synchronisés`, 'success');
-        } else {
-          this.showNotification('Aucun coupon applicable aux soins trouvé', 'info');
-        }
-      } catch (error) {
-        console.error('❌ Erreur synchronisation coupons:', error);
-        this.showNotification('Erreur lors de la synchronisation des coupons', 'error');
-      }
-    } else {
-      this.showNotification('Aucun coupon trouvé dans l\'admin', 'warning');
-    }
-  }
-
-  /**
-   * Vérifier la configuration des coupons
-   */
-  checkCouponConfig(): void {
-    const adminCoupons = localStorage.getItem('adminCoupons');
-    
-    if (!adminCoupons) {
-      console.log('⚠️ Aucun coupon configuré dans l\'admin');
-      this.showNotification('Aucun coupon configuré dans l\'admin', 'info');
-      return;
-    }
-    
-    try {
-      const coupons: Coupon[] = JSON.parse(adminCoupons);
-      
-      console.log('📊 Configuration coupons admin:');
-      console.log(`  - Total coupons: ${coupons.length}`);
-      
-      const activeCoupons = coupons.filter(c => c.isActive);
-      console.log(`  - Coupons actifs: ${activeCoupons.length}`);
-      
-      const soinCoupons = coupons.filter(c => this.isCouponApplicableToSoin(c));
-      console.log(`  - Applicables aux soins: ${soinCoupons.length}`);
-      
-      // Afficher les détails
-      soinCoupons.forEach((coupon, index) => {
-        console.log(`  ${index + 1}. ${coupon.code}:`);
-        console.log(`     - Réduction: ${coupon.discountPercentage || coupon.discountAmount || coupon.discountValue || 'Aucune'}`);
-        console.log(`     - Type: ${coupon.discountPercentage ? 'Pourcentage' : coupon.discountAmount ? 'Montant fixe' : coupon.discountValue ? 'Valeur' : 'Inconnu'}`);
-        console.log(`     - Valide jusqu'au: ${coupon.validUntil || 'pas de limite'}`);
-        console.log(`     - Catégories: ${coupon.applicableCategories?.join(', ') || 'Toutes'}`);
-        console.log(`     - Produits spécifiques: ${coupon.applicableProducts?.length || 0}`);
-      });
-      
-      this.showNotification(
-        `${coupons.length} coupons dans l'admin, ${soinCoupons.length} applicables aux soins`,
-        'info'
-      );
-      
-    } catch (error) {
-      console.error('❌ Erreur vérification configuration coupons:', error);
-    }
-  }
-
-  /**
-   * Méthode pour forcer le rechargement des coupons
-   */
-  forceReloadCoupons(): void {
-    console.log('🔄 Forcer le rechargement des coupons...');
-    this.loadCouponsFromAdmin();
-    this.showNotification('Coupons rechargés', 'success');
-  }
-
-  /**
-   * Appliquer un coupon au panier
-   */
   applyCouponToCart(): void {
     if (!this.couponCodeInput.trim()) {
       this.showNotification('Veuillez entrer un code promo', 'error');
@@ -941,7 +635,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     
     const couponCode = this.couponCodeInput.trim().toUpperCase();
     
-    // Chercher le coupon dans les coupons actifs
     const coupon = this.activeCoupons.find(c => c.code.toUpperCase() === couponCode);
     
     if (!coupon) {
@@ -949,32 +642,24 @@ export class SoinComponent implements OnInit, OnDestroy {
       return;
     }
     
-    // Vérifier si le coupon est déjà appliqué
     if (this.appliedCouponsInCart.includes(coupon.code)) {
       this.showNotification('Ce code promo est déjà appliqué', 'info');
       return;
     }
     
-    // Vérifier le montant minimum du panier
     const cartTotal = this.getCartTotal();
     if (coupon.minPurchaseAmount && cartTotal < coupon.minPurchaseAmount) {
       this.showNotification(`Minimum d'achat: ${coupon.minPurchaseAmount} TND`, 'error');
       return;
     }
     
-    // Appliquer le coupon
     this.appliedCouponsInCart.push(coupon.code);
-    
-    // Recalculer les prix dans le panier
     this.recalculateCartWithCoupons();
     
     this.showNotification(`🎉 Code promo "${coupon.code}" appliqué!`, 'success');
     this.couponCodeInput = '';
   }
 
-  /**
-   * Recalculer le panier avec les coupons
-   */
   private recalculateCartWithCoupons(): void {
     this.cart.forEach(item => {
       const product = this.products.find(p => p.id === item.id);
@@ -984,24 +669,15 @@ export class SoinComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Retirer un coupon du panier
-   */
   removeCouponFromCart(couponCode: string): void {
     const index = this.appliedCouponsInCart.indexOf(couponCode);
     if (index > -1) {
       this.appliedCouponsInCart.splice(index, 1);
-      
-      // Recalculer le panier
       this.recalculateCartWithCoupons();
-      
       this.showNotification(`Code promo "${couponCode}" retiré`, 'success');
     }
   }
 
-  /**
-   * Obtenir la réduction totale du panier
-   */
   getCartDiscountTotal(): number {
     let totalDiscount = 0;
     
@@ -1014,294 +690,231 @@ export class SoinComponent implements OnInit, OnDestroy {
     return parseFloat(totalDiscount.toFixed(2));
   }
 
-  /**
-   * Obtenir le total du panier après réduction
-   */
-  getCartTotalWithDiscount(): number {
-    const subtotal = this.getCartTotal();
-    const discount = this.getCartDiscountTotal();
-    return subtotal - discount;
+  getMaxDiscount(): number {
+    if (this.activeCoupons.length === 0) return 0;
+    
+    let maxDiscount = 0;
+    this.activeCoupons.forEach(coupon => {
+      if (coupon.discountPercentage && coupon.discountPercentage > maxDiscount) {
+        maxDiscount = coupon.discountPercentage;
+      }
+      if (coupon.discountValue && coupon.discountValue < 100 && coupon.discountValue > maxDiscount) {
+        maxDiscount = coupon.discountValue;
+      }
+    });
+    
+    return maxDiscount || 0;
   }
 
-  /**
-   * Obtenir le total final avec livraison et réduction
-   */
-  getFinalTotalWithDiscountAndShipping(): number {
-    const cartTotalWithDiscount = this.getCartTotalWithDiscount();
-    const shipping = this.hasDeliveryCost() ? 7 : 0;
-    return cartTotalWithDiscount + shipping;
+  getFirstCouponCode(): string {
+    if (this.activeCoupons.length === 0) return '';
+    return this.activeCoupons[0].code;
   }
 
-  /**
-   * Méthode pour déboguer les coupons
-   */
-  debugCoupons(): void {
-    console.log('🔍 DEBUG DÉTAILLÉ DES COUPONS');
-    
-    // 1. Vérifier soinCoupons
-    const soinCoupons = localStorage.getItem('soinCoupons');
-    if (soinCoupons) {
-      const coupons = JSON.parse(soinCoupons);
-      console.log('📦 Coupons soin:', coupons);
-      coupons.forEach((coupon: any, index: number) => {
-        console.log(`\n=== Coupon ${index + 1}: ${coupon.code} ===`);
-        console.log('Structure complète:', coupon);
-        console.log('discountPercentage:', coupon.discountPercentage, '(type:', typeof coupon.discountPercentage, ')');
-        console.log('discountAmount:', coupon.discountAmount, '(type:', typeof coupon.discountAmount, ')');
-        console.log('discountValue:', coupon.discountValue, '(type:', typeof coupon.discountValue, ')');
-        console.log('isActive:', coupon.isActive);
-      });
-    }
-    
-    // 2. Vérifier adminCoupons
-    const adminCoupons = localStorage.getItem('adminCoupons');
-    if (adminCoupons) {
-      const coupons = JSON.parse(adminCoupons);
-      console.log('📦 Coupons admin:', coupons);
-      coupons.forEach((coupon: any, index: number) => {
-        console.log(`\n=== Coupon admin ${index + 1}: ${coupon.code} ===`);
-        console.log('Structure complète:', coupon);
-        console.log('discountPercentage:', coupon.discountPercentage, '(type:', typeof coupon.discountPercentage, ')');
-        console.log('discountAmount:', coupon.discountAmount, '(type:', typeof coupon.discountAmount, ')');
-        console.log('discountValue:', coupon.discountValue, '(type:', typeof coupon.discountValue, ')');
-        console.log('isActive:', coupon.isActive);
-      });
-    }
-    
-    this.showNotification('Debug coupons exécuté - Voir console', 'info');
+  // ==================== MÉTHODES REQUISES PAR LE TEMPLATE ====================
+
+  checkCouponConfig(): void {
+    console.log('🔍 Vérification de la configuration des coupons');
+    this.debugCoupons();
   }
 
-  /**
-   * Corriger automatiquement les coupons
-   */
-  fixCoupons(): void {
-    console.log('🔧 Correction automatique des coupons...');
-    
-    // Corriger soinCoupons
-    const soinCoupons = localStorage.getItem('soinCoupons');
-    if (soinCoupons) {
-      const coupons = JSON.parse(soinCoupons);
-      let fixedCount = 0;
-      
-      const fixedCoupons = coupons.map((coupon: any) => {
-        const fixed = { ...coupon };
-        
-        // Si aucune réduction n'est définie, essayer de la deviner
-        const hasNoDiscount = 
-          (fixed.discountPercentage === undefined || fixed.discountPercentage === null || fixed.discountPercentage === 0) &&
-          (fixed.discountAmount === undefined || fixed.discountAmount === null || fixed.discountAmount === 0) &&
-          (fixed.discountValue === undefined || fixed.discountValue === null || fixed.discountValue === 0);
-        
-        if (hasNoDiscount) {
-          // Essayer de deviner depuis le code
-          const codeMatch = coupon.code.match(/\d+/);
-          if (codeMatch) {
-            const discount = parseInt(codeMatch[0], 10);
-            // Si < 100, c'est probablement un pourcentage
-            if (discount < 100) {
-              fixed.discountPercentage = discount;
-              fixed.discountValue = discount;
-              console.log(`🔧 ${coupon.code}: discountPercentage deviné à ${discount}% depuis le code`);
-            } else {
-              fixed.discountAmount = discount;
-              fixed.discountValue = discount;
-              console.log(`🔧 ${coupon.code}: discountAmount deviné à ${discount}€ depuis le code`);
-            }
-            fixedCount++;
-          } else {
-            // Par défaut, 10% de réduction
-            fixed.discountPercentage = 10;
-            fixed.discountValue = 10;
-            fixedCount++;
-            console.log(`🔧 ${coupon.code}: discountPercentage défini à 10% par défaut`);
-          }
-        }
-        
-        // S'assurer que isActive est true par défaut
-        if (fixed.isActive === undefined || fixed.isActive === null) {
-          fixed.isActive = true;
-          fixedCount++;
-          console.log(`🔧 ${coupon.code}: isActive défini à true`);
-        }
-        
-        return fixed;
-      });
-      
-      localStorage.setItem('soinCoupons', JSON.stringify(fixedCoupons));
-      console.log(`✅ ${fixedCount} corrections appliquées dans soinCoupons`);
-    }
-    
-    // Corriger adminCoupons
-    const adminCoupons = localStorage.getItem('adminCoupons');
-    if (adminCoupons) {
-      const coupons = JSON.parse(adminCoupons);
-      let fixedCount = 0;
-      
-      const fixedCoupons = coupons.map((coupon: any) => {
-        const fixed = { ...coupon };
-        
-        // Si aucune réduction n'est définie, essayer de la deviner
-        const hasNoDiscount = 
-          (fixed.discountPercentage === undefined || fixed.discountPercentage === null || fixed.discountPercentage === 0) &&
-          (fixed.discountAmount === undefined || fixed.discountAmount === null || fixed.discountAmount === 0) &&
-          (fixed.discountValue === undefined || fixed.discountValue === null || fixed.discountValue === 0);
-        
-        if (hasNoDiscount) {
-          // Essayer de deviner depuis le code
-          const codeMatch = coupon.code.match(/\d+/);
-          if (codeMatch) {
-            const discount = parseInt(codeMatch[0], 10);
-            // Si < 100, c'est probablement un pourcentage
-            if (discount < 100) {
-              fixed.discountPercentage = discount;
-              fixed.discountValue = discount;
-              console.log(`🔧 ${coupon.code}: discountPercentage deviné à ${discount}% depuis le code`);
-            } else {
-              fixed.discountAmount = discount;
-              fixed.discountValue = discount;
-              console.log(`🔧 ${coupon.code}: discountAmount deviné à ${discount}€ depuis le code`);
-            }
-            fixedCount++;
-          } else {
-            // Par défaut, 10% de réduction
-            fixed.discountPercentage = 10;
-            fixed.discountValue = 10;
-            fixedCount++;
-            console.log(`🔧 ${coupon.code}: discountPercentage défini à 10% par défaut`);
-          }
-        }
-        
-        // S'assurer que isActive est true par défaut
-        if (fixed.isActive === undefined || fixed.isActive === null) {
-          fixed.isActive = true;
-          fixedCount++;
-          console.log(`🔧 ${coupon.code}: isActive défini à true`);
-        }
-        
-        return fixed;
-      });
-      
-      localStorage.setItem('adminCoupons', JSON.stringify(fixedCoupons));
-      console.log(`✅ ${fixedCount} corrections appliquées dans adminCoupons`);
-    }
-    
-    // Recharger les coupons
-    this.loadCouponsFromAdmin();
-    this.showNotification('Coupons corrigés et rechargés', 'success');
-  }
-
-  /**
-   * Créer des coupons de test valides
-   */
   createTestCoupons(): void {
-    console.log('🧪 Création de coupons de test valides...');
+    console.log('🧪 Création de coupons de test...');
+    
+    const today = new Date();
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 30);
     
     const testCoupons: Coupon[] = [
       {
-        id: 1001,
-        code: 'SOIN10',
+        id: Date.now() + 1,
+        code: 'TEST10',
         discountPercentage: 10,
-        discountAmount: 0,
         discountValue: 10,
         isActive: true,
-        validFrom: '2024-01-01',
-        validUntil: '2024-12-31',
+        validFrom: today.toISOString().split('T')[0],
+        validUntil: futureDate.toISOString().split('T')[0],
         minPurchaseAmount: 0,
-        applicableCategories: ['Soin Visage', 'Soin Corps'],
+        applicableCategories: ['Soin Visage'],
         applicableProducts: [],
         maxUses: 100,
         usedCount: 0,
-        description: '10% de réduction sur les soins',
+        description: '10% de réduction - Coupon de test',
         applicablePage: 'soin'
       },
       {
-        id: 1002,
-        code: 'BEAUTE20',
+        id: Date.now() + 2,
+        code: 'SOIN20',
         discountPercentage: 20,
-        discountAmount: 0,
         discountValue: 20,
         isActive: true,
-        validFrom: '2024-01-01',
-        validUntil: '2024-12-31',
-        minPurchaseAmount: 0,
-        applicableCategories: [],
+        validFrom: today.toISOString().split('T')[0],
+        validUntil: futureDate.toISOString().split('T')[0],
+        minPurchaseAmount: 50,
+        applicableCategories: ['Soin Corps', 'Soin Visage'],
         applicableProducts: [],
         maxUses: 50,
         usedCount: 0,
-        description: '20% de réduction sur tout',
-        applicablePage: 'all'
-      },
-      {
-        id: 1003,
-        code: 'VIP30',
-        discountPercentage: 30,
-        discountAmount: 0,
-        discountValue: 30,
-        isActive: true,
-        validFrom: '2024-01-01',
-        validUntil: '2024-12-31',
-        minPurchaseAmount: 100,
-        applicableCategories: ['Soin Cheveux'],
-        applicableProducts: [],
-        maxUses: 25,
-        usedCount: 0,
-        description: '30% de réduction sur les soins cheveux',
+        description: '20% sur les soins - Coupon de test',
         applicablePage: 'soin'
       }
     ];
     
-    // Sauvegarder les coupons de test
-    localStorage.setItem('adminCoupons', JSON.stringify(testCoupons));
-    localStorage.setItem('soinCoupons', JSON.stringify(testCoupons.filter(c => c.applicablePage === 'soin' || c.applicablePage === 'all')));
-    
-    console.log('✅ 3 coupons de test valides créés');
-    
-    // Recharger
-    this.loadCouponsFromAdmin();
-    
-    this.showNotification('🧪 Coupons de test valides créés!', 'success');
-  }
-
-  /**
-   * Vérifier et corriger les données coupon
-   */
-  private checkAndFixCouponData(): void {
-    console.log('🔍 Vérification des données coupon...');
-    
-    // Vérifier les coupons dans adminCoupons
+    let existingCoupons: Coupon[] = [];
     const adminCoupons = localStorage.getItem('adminCoupons');
     if (adminCoupons) {
       try {
-        const coupons = JSON.parse(adminCoupons);
-        let needsFix = false;
-        
-        coupons.forEach((coupon: any) => {
-          const hasDiscount = 
-            (coupon.discountPercentage && coupon.discountPercentage > 0) ||
-            (coupon.discountAmount && coupon.discountAmount > 0) ||
-            (coupon.discountValue && coupon.discountValue > 0);
-          
-          if (!hasDiscount) {
-            console.log(`⚠️ Coupon ${coupon.code} n'a pas de réduction définie`);
-            needsFix = true;
+        existingCoupons = JSON.parse(adminCoupons);
+      } catch (e) {
+        console.error('❌ Erreur parsing coupons existants:', e);
+      }
+    }
+    
+    const allCoupons = [...existingCoupons, ...testCoupons];
+    localStorage.setItem('adminCoupons', JSON.stringify(allCoupons));
+    
+    this.loadCouponsFromAdmin();
+    this.showNotification(`${testCoupons.length} coupons de test créés!`, 'success');
+  }
+
+  createExpiredTestCoupon(): void {
+    console.log('🧪 Création d\'un coupon de test expiré...');
+    
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const expiredCoupon: Coupon = {
+      id: Date.now(),
+      code: 'EXPIRE50',
+      discountPercentage: 50,
+      discountValue: 50,
+      isActive: true,
+      validFrom: '2024-01-01',
+      validUntil: yesterday.toISOString().split('T')[0],
+      minPurchaseAmount: 0,
+      applicableCategories: [],
+      applicableProducts: [],
+      maxUses: 10,
+      usedCount: 0,
+      description: 'Coupon expiré (test)',
+      applicablePage: 'soin'
+    };
+    
+    let coupons: Coupon[] = [];
+    const existingCoupons = localStorage.getItem('adminCoupons');
+    if (existingCoupons) {
+      try {
+        coupons = JSON.parse(existingCoupons);
+      } catch (e) {
+        console.error('❌ Erreur parsing:', e);
+      }
+    }
+    
+    coupons.push(expiredCoupon);
+    localStorage.setItem('adminCoupons', JSON.stringify(coupons));
+    this.loadCouponsFromAdmin();
+    this.showNotification('Coupon expiré créé', 'success');
+  }
+
+  restoreAllExpiredCoupons(): void {
+    console.log('🔄 Restauration des coupons expirés...');
+    
+    const adminCoupons = localStorage.getItem('adminCoupons');
+    if (!adminCoupons) {
+      this.showNotification('Aucun coupon trouvé', 'info');
+      return;
+    }
+    
+    try {
+      const coupons = JSON.parse(adminCoupons);
+      const now = new Date();
+      let restoredCount = 0;
+      
+      coupons.forEach((coupon: Coupon) => {
+        if (coupon.validUntil) {
+          const validUntil = new Date(coupon.validUntil);
+          if (validUntil < now) {
+            const newDate = new Date();
+            newDate.setDate(newDate.getDate() + 30);
+            coupon.validUntil = newDate.toISOString().split('T')[0];
+            restoredCount++;
           }
+        }
+      });
+      
+      if (restoredCount > 0) {
+        localStorage.setItem('adminCoupons', JSON.stringify(coupons));
+        
+        this.restorationHistory.push({
+          timestamp: new Date().toISOString(),
+          action: 'restauration',
+          coupons: restoredCount
         });
         
-        if (needsFix) {
-          console.log('🔄 Correction nécessaire des coupons');
-          // On ne corrige pas automatiquement ici, laisse l'utilisateur décider
-        }
-      } catch (error) {
-        console.error('❌ Erreur vérification coupons:', error);
+        this.loadCouponsFromAdmin();
+        this.showNotification(`${restoredCount} coupon(s) restauré(s)`, 'success');
+      } else {
+        this.showNotification('Aucun coupon expiré trouvé', 'info');
       }
+    } catch (error) {
+      console.error('❌ Erreur restauration:', error);
+      this.showNotification('Erreur lors de la restauration', 'error');
+    }
+  }
+
+  showRestorationHistory(): void {
+    console.log('📜 Historique des restaurations:');
+    
+    if (this.restorationHistory.length === 0) {
+      console.log('Aucun historique disponible');
+      this.showNotification('Aucun historique de restauration', 'info');
+      return;
+    }
+    
+    console.log('=== HISTORIQUE DES RESTAURATIONS ===');
+    this.restorationHistory.forEach((entry, index) => {
+      const date = new Date(entry.timestamp);
+      console.log(`${index + 1}. ${date.toLocaleString()} - ${entry.action}: ${entry.coupons} coupons`);
+    });
+    
+    const lastEntry = this.restorationHistory[this.restorationHistory.length - 1];
+    const lastDate = new Date(lastEntry.timestamp).toLocaleString();
+    this.showNotification(`Dernière restauration: ${lastDate} (${lastEntry.coupons} coupons)`, 'info');
+  }
+
+  debugCoupons(): void {
+    console.log('🔍 DEBUG COUPONS');
+    
+    const adminCoupons = localStorage.getItem('adminCoupons');
+    console.log('📦 adminCoupons:', adminCoupons ? JSON.parse(adminCoupons).length : 0);
+    console.log('🎯 activeCoupons:', this.activeCoupons.length);
+    console.log('💰 couponDiscounts:', Object.keys(this.couponDiscounts).length);
+    
+    if (adminCoupons) {
+      try {
+        const coupons = JSON.parse(adminCoupons);
+        coupons.forEach((c: any, i: number) => {
+          console.log(`\n=== Coupon ${i+1}: ${c.code} ===`);
+          console.log('  isActive:', c.isActive);
+          console.log('  discount:', c.discountPercentage || c.discountAmount || c.discountValue);
+          console.log('  validFrom:', c.validFrom);
+          console.log('  validUntil:', c.validUntil);
+          console.log('  applicablePage:', c.applicablePage);
+        });
+        
+        this.showNotification(`${coupons.length} coupons dans adminCoupons`, 'info');
+      } catch (error) {
+        console.error('❌ Erreur parsing:', error);
+        this.showNotification('Erreur lors du débogage des coupons', 'error');
+      }
+    } else {
+      console.log('❌ adminCoupons n\'existe pas dans localStorage');
+      this.showNotification('Aucun coupon trouvé dans admin', 'error');
     }
   }
 
   // ==================== MÉTHODES SPÉCIFIQUES SOIN ====================
 
-  /**
-   * Chargement automatique des produits depuis l'admin avec filtrage soin
-   */
   loadProductsFromAdminAuto(): void {
     this.isLoadingProducts = true;
     console.log('🔄 Chargement des produits de soin depuis l\'admin...');
@@ -1317,6 +930,7 @@ export class SoinComponent implements OnInit, OnDestroy {
           this.filteredProducts = [...this.products];
           this.updatePagination();
           this.isLoadingProducts = false;
+          this.applyCouponsToProducts();
           return;
         }
       } catch (error) {
@@ -1339,6 +953,7 @@ export class SoinComponent implements OnInit, OnDestroy {
           this.isLoadingProducts = false;
           
           localStorage.setItem('soinProducts', JSON.stringify(soinProducts));
+          this.applyCouponsToProducts();
           
           return;
         } else {
@@ -1354,11 +969,9 @@ export class SoinComponent implements OnInit, OnDestroy {
     this.filteredProducts = [...this.products];
     this.updatePagination();
     this.isLoadingProducts = false;
+    this.applyCouponsToProducts();
   }
 
-  /**
-   * Vérifier si un produit est un produit de soin
-   */
   private isSoinProduct(product: any): boolean {
     if (!product) return false;
     if (product.isActive === false) return false;
@@ -1414,8 +1027,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     
     return hasSoinKeyword && !isExcluded;
   }
-
-  // ==================== RESTE DU CODE (méthodes existantes) ====================
 
   private transformAdminProducts(adminProducts: any[]): Product[] {
     return adminProducts.map((product: any) => {
@@ -2149,14 +1760,27 @@ export class SoinComponent implements OnInit, OnDestroy {
     return this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   }
 
+  getCartTotalWithDiscount(): number {
+    const subtotal = this.getCartTotal();
+    const discount = this.getCartDiscountTotal();
+    return subtotal - discount;
+  }
+
+  // Frais de livraison fixes à 7 DT
   hasDeliveryCost(): boolean {
-    return this.orderForm.get('paymentMethod')?.value === 'delivery';
+    return true; // Toujours 7 DT de frais de livraison
   }
 
   getTotalWithShipping(): number {
     const subtotal = this.getCartTotal();
-    const shipping = this.hasDeliveryCost() ? 7 : 0;
+    const shipping = 7;
     return subtotal + shipping;
+  }
+
+  getFinalTotalWithDiscountAndShipping(): number {
+    const cartTotalWithDiscount = this.getCartTotalWithDiscount();
+    const shipping = 7;
+    return cartTotalWithDiscount + shipping;
   }
 
   checkout(): void {
@@ -2380,7 +2004,7 @@ export class SoinComponent implements OnInit, OnDestroy {
     this.handleEscapeKey();
   }
 
-  // ==================== CHECKOUT - ENVOI À L'API ====================
+  // ==================== CHECKOUT - ENVOI À L'API (SANS PAIEMENT EN LIGNE) ====================
 
   async submitOrder(): Promise<void> {
     if (this.orderForm.invalid) {
@@ -2404,7 +2028,7 @@ export class SoinComponent implements OnInit, OnDestroy {
         orderNumber: orderNumber
       };
       
-      console.log('📤 Envoi commande soin à l\'API:', orderToSend);
+      console.log('📤 Envoi commande soin à l\'API (paiement à la livraison):', orderToSend);
 
       const response = await this.http.post<ApiResponse<Order>>(
         `${this.API_URL}/orders`,
@@ -2419,11 +2043,9 @@ export class SoinComponent implements OnInit, OnDestroy {
         this.appliedCouponsInCart = [];
         
         this.closeCheckout();
-        this.orderForm.reset({
-          paymentMethod: 'delivery'
-        });
+        this.orderForm.reset({});
         
-        this.showNotification(`Commande #${orderNumber} envoyée avec succès!`, 'success');
+        this.showNotification(`Commande #${orderNumber} confirmée! Paiement à la livraison.`, 'success');
         
         this.notifyAdmin(orderNumber, orderData);
         
@@ -2455,9 +2077,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Préparer les données de commande pour l'API
-   */
   private prepareOrderData(): any {
     const formValue = this.orderForm.value;
     const orderItems = this.cart.map(item => ({
@@ -2472,8 +2091,12 @@ export class SoinComponent implements OnInit, OnDestroy {
 
     const subtotal = this.getCartTotal();
     const discountTotal = this.getCartDiscountTotal();
-    const shippingCost = this.hasDeliveryCost() ? 7 : 0;
+    const shippingCost = 7; // Frais de livraison fixes
     const totalAmount = subtotal - discountTotal + shippingCost;
+
+    // Paiement UNIQUEMENT à la livraison
+    const paymentStatus = 'PENDING';
+    const paymentMethod = 'CASH_ON_DELIVERY';
 
     return {
       customerFirstName: formValue.firstName.trim(),
@@ -2487,8 +2110,8 @@ export class SoinComponent implements OnInit, OnDestroy {
       city: formValue.city.trim(),
       
       status: 'PENDING',
-      paymentStatus: formValue.paymentMethod === 'online' ? 'PAID' : 'PENDING',
-      paymentMethod: formValue.paymentMethod === 'online' ? 'ONLINE' : 'CASH_ON_DELIVERY',
+      paymentStatus: paymentStatus,
+      paymentMethod: paymentMethod,
       shippingMethod: 'STANDARD',
       shippingCost: shippingCost,
       subtotal: subtotal,
@@ -2507,9 +2130,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     };
   }
 
-  /**
-   * Notifier l'admin de la nouvelle commande
-   */
   private notifyAdmin(orderNumber: string, orderData: any): void {
     try {
       const adminOrders = JSON.parse(localStorage.getItem('admin_all_orders') || '[]');
@@ -2548,9 +2168,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Sauvegarder localement (fallback)
-   */
   private saveOrderLocally(orderData: any, orderNumber: string): void {
     try {
       const localOrder = {
@@ -2578,9 +2195,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Synchroniser les commandes en attente avec l'admin
-   */
   syncPendingOrdersWithAdmin(): void {
     try {
       const pendingOrders = JSON.parse(localStorage.getItem('soinOrders') || '[]');
@@ -2611,9 +2225,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Forcer la synchronisation manuelle (pour bouton admin)
-   */
   forceSyncWithAdmin(): void {
     this.syncPendingOrdersWithAdmin();
     this.showNotification('Synchronisation forcée avec l\'admin effectuée', 'info');
@@ -2637,8 +2248,6 @@ export class SoinComponent implements OnInit, OnDestroy {
       this.orderForm.get(key)?.markAsTouched();
     });
   }
-
-  // ==================== MÉTHODES D'AIDE ====================
 
   private getSoinOrdersFromLocalStorage(): any[] {
     try {
@@ -2688,9 +2297,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     this.showNotification(message, type);
   }
 
-  /**
-   * Synchroniser les commandes soin avec la liste des commandes de l'admin
-   */
   syncSoinOrdersToAdminOrders(): void {
     console.log('🔄 Synchronisation des commandes soin vers admin...');
     
@@ -2723,7 +2329,7 @@ export class SoinComponent implements OnInit, OnDestroy {
           
           allOrders.unshift(orderToAdd);
           newOrdersCount++;
-          console.log(`✅ Nouvelle commande soin ajoutée: ${soinOrder.orderNumber} (ID: ${orderToAdd.id})`);
+          console.log(`✅ Nouvelle commande soin ajoutée: ${soinOrder.orderNumber}`);
         } else {
           allOrders[existingIndex] = {
             ...allOrders[existingIndex],
@@ -2756,8 +2362,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ==================== AUTRES MÉTHODES ====================
-
   calculateDiscountNew(product: Product): number {
     return this.calculateDiscount(product);
   }
@@ -2785,8 +2389,6 @@ export class SoinComponent implements OnInit, OnDestroy {
   getSelectedProductNew(): Product | null {
     return this.getSelectedProduct();
   }
-
-  // ==================== CONSOLE DE CONSEILS ====================
 
   showAdviceConsole() {
     this.showAdviceConsoleSection = true;
@@ -2834,11 +2436,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     window.print();
   }
 
-  // ==================== MÉTHODES ADMIN SOIN ====================
-
-  /**
-   * Synchronisation forcée depuis admin
-   */
   syncProductsFromAdmin(): void {
     console.log('🔄 Synchronisation forcée depuis admin...');
     
@@ -2876,9 +2473,6 @@ export class SoinComponent implements OnInit, OnDestroy {
     this.isLoadingProducts = false;
   }
 
-  /**
-   * Obtenir les statistiques de filtrage
-   */
   getFilteringStats(): any {
     const adminProducts = localStorage.getItem('adminProducts');
     if (!adminProducts) return { total: 0, soin: 0, other: 0 };
@@ -2894,16 +2488,11 @@ export class SoinComponent implements OnInit, OnDestroy {
     };
   }
 
-  /**
-   * Mettre à jour les statistiques
-   */
   updateFilteringStats(): void {
     if (this.showAdminButton) {
       this.filteringStats = this.getFilteringStats();
     }
   }
-
-  // ==================== MÉTHODES COUPONS UTILITAIRES ====================
 
   applyAutomaticDiscounts() {
     console.log('🔄 Application des réductions automatiques...');
@@ -2930,39 +2519,17 @@ export class SoinComponent implements OnInit, OnDestroy {
     this.showNotification('Toutes les réductions coupon ont été supprimées', 'success');
   }
 
-  /**
-   * Méthode pour vérifier si des coupons sont configurés
-   */
   checkCouponConfiguration(): void {
-    const storedCoupons = localStorage.getItem('adminCoupons');
-    
-    if (!storedCoupons) {
-      console.log('⚠️ Aucun coupon configuré dans l\'admin');
-      this.showNotification('Aucun coupon configuré dans l\'admin', 'info');
-      return;
-    }
-    
-    try {
-      const coupons = JSON.parse(storedCoupons);
-      console.log(`📊 Configuration coupons: ${coupons.length} coupons trouvés`);
-      
-      const activeCoupons = coupons.filter((c: any) => c.isActive === true);
-      const applicableToSoin = coupons.filter((c: any) => 
-        !c.applicablePage || c.applicablePage === 'all' || c.applicablePage === 'soin'
-      );
-      
-      console.log('📊 Statistiques coupons:');
-      console.log(`  - Total: ${coupons.length}`);
-      console.log(`  - Actifs: ${activeCoupons.length}`);
-      console.log(`  - Applicables à soin: ${applicableToSoin.length}`);
-      
-      this.showNotification(
-        `${coupons.length} coupons configurés, ${activeCoupons.length} actifs`,
-        'info'
-      );
-      
-    } catch (error) {
-      console.error('❌ Erreur vérification configuration coupons:', error);
-    }
+    this.debugCoupons();
+  }
+
+  forceReloadCoupons(): void {
+    this.refreshCoupons();
+  }
+
+  fixCoupons(): void {
+    console.log('🔧 Correction automatique des coupons...');
+    this.loadCouponsFromAdmin();
+    this.showNotification('Coupons rechargés', 'success');
   }
 }

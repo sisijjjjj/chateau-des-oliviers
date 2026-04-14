@@ -3532,3 +3532,1329 @@ img {
     font-size: 2.5rem;
   }
 }
+/* Header Styles - Dégradé marron/vert olive avec bordures dorées */
+.site-header {
+    background: linear-gradient(135deg, #4E342E 0%, #5D4037 40%, #3F652B 80%, #2F4C20 100%);
+    border-top: 3px solid #D4AF37; /* Bordure dorée en haut */
+    border-bottom: 3px solid #D4AF37; /* Bordure dorée en bas */
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Logo */
+.logo-img {
+    height: 50px;
+    width: auto;
+    filter: brightness(1.1); /* Pour mieux voir sur fond foncé */
+}
+
+/* Navigation */
+.main-nav ul {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 2rem;
+}
+
+.nav-link {
+    color: #ffffff; /* Blanc pour contraster avec le fond foncé */
+    text-decoration: none;
+    font-weight: 400;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: #D4AF37; /* Doré au survol */
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: #D4AF37;
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+    width: 100%;
+}
+
+/* Dropdown */
+.nav-dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: linear-gradient(135deg, #4E342E, #3F652B);
+    min-width: 220px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    padding: 0.8rem 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    z-index: 100;
+    border: 1px solid #D4AF37;
+}
+
+.nav-dropdown:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 1.5rem;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.dropdown-item i {
+    color: #D4AF37;
+    width: 20px;
+    font-size: 0.9rem;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(212, 175, 55, 0.2);
+    color: #D4AF37;
+}
+
+/* Header Actions */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    position: relative;
+}
+
+/* Icône langue */
+.language-icon {
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #ffffff;
+    transition: color 0.3s ease;
+}
+
+.language-icon:hover {
+    color: #D4AF37;
+}
+
+/* Menu langue dropdown */
+.language-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: linear-gradient(135deg, #4E342E, #3F652B);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    min-width: 80px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #D4AF37;
+}
+
+.language-dropdown button {
+    padding: 0.8rem 1rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #ffffff;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.language-dropdown button:hover {
+    background-color: rgba(212, 175, 55, 0.2);
+    color: #D4AF37;
+}
+
+/* Search */
+.search-container {
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    padding: 0.4rem 1rem;
+    border: 1px solid #D4AF37;
+    background-color: rgba(255, 255, 255, 0.1);
+    font-size: 0.9rem;
+    width: 200px;
+    color: #ffffff;
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.search-input:focus {
+    outline: none;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.search-btn {
+    background: none;
+    border: none;
+    padding: 0 0.5rem;
+    cursor: pointer;
+    color: #ffffff;
+}
+
+.search-btn:hover {
+    color: #D4AF37;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    color: #ffffff;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+.action-btn:hover {
+    color: #D4AF37;
+}
+
+.cart-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #D4AF37;
+    color: #4E342E;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    min-width: 18px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: bold;
+}
+
+/* Mobile menu button */
+.mobile-menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #ffffff;
+}
+
+.mobile-menu-btn:hover {
+    color: #D4AF37;
+}
+
+/* Mobile Navigation */
+.mobile-nav {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 80%;
+    max-width: 400px;
+    height: 100vh;
+    background: linear-gradient(135deg, #4E342E, #3F652B);
+    z-index: 1001;
+    transition: right 0.3s ease;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+    border-left: 2px solid #D4AF37;
+}
+
+.mobile-nav.active {
+    right: 0;
+}
+
+.mobile-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #D4AF37;
+}
+
+.mobile-nav-title {
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: #ffffff;
+}
+
+.mobile-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #ffffff;
+}
+
+.mobile-close-btn:hover {
+    color: #D4AF37;
+}
+
+.mobile-nav-content {
+    padding: 1.5rem;
+    overflow-y: auto;
+    height: calc(100vh - 80px);
+}
+
+.mobile-nav-link {
+    display: block;
+    padding: 1rem 0;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 1rem;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    cursor: pointer;
+}
+
+.mobile-nav-link:hover {
+    color: #D4AF37;
+}
+
+.mobile-submenu-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mobile-submenu-items {
+    padding-left: 1rem;
+    display: none;
+}
+
+.mobile-submenu-items.active {
+    display: block;
+}
+
+.mobile-submenu-link {
+    display: block;
+    padding: 0.8rem 0;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.mobile-submenu-link i {
+    color: #D4AF37;
+    width: 20px;
+    margin-right: 10px;
+}
+
+.mobile-submenu-link:hover {
+    color: #D4AF37;
+}
+
+.mobile-language-selector {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    justify-content: center;
+}
+
+.lang-btn {
+    background: none;
+    border: 1px solid #D4AF37;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    color: #ffffff;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.lang-btn.active,
+.lang-btn:hover {
+    background-color: #D4AF37;
+    color: #4E342E;
+}
+
+/* Overlay */
+.nav-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: none;
+}
+
+.nav-overlay.active {
+    display: block;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .main-nav {
+        display: none;
+    }
+    
+    .mobile-menu-btn {
+        display: block;
+    }
+    
+    .search-container {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-container {
+        padding: 0.5rem 1rem;
+    }
+    
+    .action-buttons {
+        gap: 0.8rem;
+    }
+}
+.footer {
+    background-color: #1e3a2f; /* Vert foncé */
+    color: #ffffff;
+    padding: 3rem 0 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Structure en 4 colonnes */
+.footer-columns {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+/* Colonne 1 - Brand et réseaux sociaux */
+.brand-col {
+    text-align: left;
+}
+
+.footer-brand {
+    font-size: 2.2rem;
+    font-weight: 300;
+    margin-bottom: 1rem;
+    color: #ffffff;
+    letter-spacing: 1px;
+}
+
+.footer-description {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #d0d0d0;
+    margin-bottom: 1.5rem;
+}
+
+/* Réseaux sociaux */
+.social-links {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: #ffffff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+}
+
+.social-link:hover {
+    background-color: #d4af37;
+    color: #1e3a2f;
+    transform: translateY(-3px);
+}
+
+/* Titres des colonnes */
+.footer-title {
+    color: #d4af37; /* Or */
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+.footer-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background-color: #d4af37;
+}
+
+/* Listes */
+.footer-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-list li {
+    margin-bottom: 0.8rem;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+}
+
+.footer-list li:hover {
+    color: #d4af37;
+    cursor: default;
+}
+
+/* Style pour la liste avec icônes dorées */
+.footer-list.with-icons li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.footer-list.with-icons .icon {
+    color: #d4af37; /* Icônes dorées */
+    width: 30px;
+    font-size: 1.2rem;
+    margin-right: 10px;
+    transition: transform 0.3s ease;
+}
+
+.footer-list.with-icons li:hover .icon {
+    transform: scale(1.1);
+}
+
+/* Footer bottom avec paiement et copyright */
+.footer-bottom {
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    padding: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.payment-methods {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.payment-methods i {
+    font-size: 2rem;
+    color: #a0a0a0;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.payment-methods i:hover {
+    color: #d4af37;
+    transform: translateY(-2px);
+}
+
+.copyright {
+    color: #a0a0a0;
+    font-size: 0.9rem;
+    margin: 0;
+    text-align: center;
+}
+
+.copyright a {
+    color: #d4af37;
+    text-decoration: none;
+    margin: 0 3px;
+    transition: color 0.3s ease;
+}
+
+.copyright a:hover {
+    text-decoration: underline;
+    color: #e6c200;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .footer-columns {
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 2rem;
+    }
+    
+    .brand-col {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer-columns {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .footer-title::after {
+        left: 0;
+        width: 40px;
+    }
+    
+    .footer-col {
+        text-align: left;
+    }
+    
+    .payment-methods {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .payment-methods i {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer {
+        padding: 2rem 0 0;
+    }
+    
+    .footer-brand {
+        font-size: 1.8rem;
+    }
+    
+    .social-links {
+        justify-content: flex-start;
+    }
+    
+    .payment-methods i {
+        font-size: 1.5rem;
+    }
+}
+/* Footer Styles - Version simplifiée */
+.footer {
+    background-color: #1e3a2f; /* Vert foncé */
+    color: #ffffff;
+    padding: 3rem 0 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Structure en 4 colonnes */
+.footer-columns {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+/* Colonne 1 - Brand et réseaux sociaux */
+.brand-col {
+    text-align: left;
+}
+
+.footer-brand {
+    font-size: 2.2rem;
+    font-weight: 300;
+    margin-bottom: 1rem;
+    color: #ffffff;
+    letter-spacing: 1px;
+}
+
+.footer-description {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #d0d0d0;
+    margin-bottom: 1.5rem;
+}
+
+/* Réseaux sociaux */
+.social-links {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: #ffffff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+}
+
+.social-link:hover {
+    background-color: #d4af37;
+    color: #1e3a2f;
+    transform: translateY(-3px);
+}
+
+/* Titres des colonnes */
+.footer-title {
+    color: #d4af37; /* Or */
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+.footer-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background-color: #d4af37;
+}
+
+/* Listes */
+.footer-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-list li {
+    margin-bottom: 0.8rem;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+}
+
+.footer-list li:hover {
+    color: #d4af37;
+    cursor: default;
+}
+
+/* Style pour la liste avec icônes dorées */
+.footer-list.with-icons li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.footer-list.with-icons .icon {
+    color: #d4af37; /* Icônes dorées */
+    width: 30px;
+    font-size: 1.2rem;
+    margin-right: 10px;
+    transition: transform 0.3s ease;
+}
+
+.footer-list.with-icons li:hover .icon {
+    transform: scale(1.1);
+}
+
+/* Footer bottom avec paiement et copyright */
+.footer-bottom {
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    padding: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.payment-methods {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.payment-methods i {
+    font-size: 2rem;
+    color: #a0a0a0;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.payment-methods i:hover {
+    color: #d4af37;
+    transform: translateY(-2px);
+}
+
+.copyright {
+    color: #a0a0a0;
+    font-size: 0.9rem;
+    margin: 0;
+    text-align: center;
+}
+
+.copyright a {
+    color: #d4af37;
+    text-decoration: none;
+    margin: 0 3px;
+    transition: color 0.3s ease;
+}
+
+.copyright a:hover {
+    text-decoration: underline;
+    color: #e6c200;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .footer-columns {
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 2rem;
+    }
+    
+    .brand-col {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer-columns {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .footer-title::after {
+        left: 0;
+        width: 40px;
+    }
+    
+    .footer-col {
+        text-align: left;
+    }
+    
+    .payment-methods {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .payment-methods i {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer {
+        padding: 2rem 0 0;
+    }
+    
+    .footer-brand {
+        font-size: 1.8rem;
+    }
+    
+    .social-links {
+        justify-content: flex-start;
+    }
+    
+    .payment-methods i {
+        font-size: 1.5rem;
+    }
+}
+/* Footer CSS */
+.footer {
+    background-color: #1e3a2f; /* Vert foncé */
+    color: #ffffff;
+    padding: 3rem 0 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Structure en 4 colonnes */
+.footer-columns {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+/* Styles des colonnes */
+.footer-col {
+    text-align: left;
+}
+
+/* Colonne Brand */
+.footer-brand {
+    font-size: 2.2rem;
+    font-weight: 300;
+    margin-bottom: 1rem;
+    color: #ffffff;
+    letter-spacing: 1px;
+}
+
+.footer-description {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #d0d0d0;
+    margin-bottom: 1.5rem;
+}
+
+/* Réseaux sociaux */
+.social-links {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: #ffffff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+}
+
+.social-link:hover {
+    background-color: #d4af37;
+    color: #1e3a2f;
+    transform: translateY(-3px);
+}
+
+/* Titres des colonnes */
+.footer-title {
+    color: #d4af37; /* Or */
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+.footer-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background-color: #d4af37;
+}
+
+/* Listes */
+.footer-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-list li {
+    margin-bottom: 0.8rem;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+    cursor: default;
+}
+
+.footer-list li:hover {
+    color: #d4af37;
+}
+
+/* Liste avec icônes */
+.footer-list.with-icons li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.footer-list.with-icons .icon {
+    color: #d4af37;
+    width: 30px;
+    font-size: 1.2rem;
+    margin-right: 10px;
+    transition: transform 0.3s ease;
+}
+
+.footer-list.with-icons li:hover .icon {
+    transform: scale(1.1);
+}
+
+/* Footer bottom */
+.footer-bottom {
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    padding: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.payment-methods {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.payment-methods i {
+    font-size: 2rem;
+    color: #a0a0a0;
+    transition: all 0.3s ease;
+}
+
+.payment-methods i:hover {
+    color: #d4af37;
+    transform: translateY(-2px);
+}
+
+.copyright {
+    color: #a0a0a0;
+    font-size: 0.9rem;
+    margin: 0;
+    text-align: center;
+}
+
+.copyright a {
+    color: #d4af37;
+    text-decoration: none;
+    margin: 0 3px;
+    transition: color 0.3s ease;
+}
+
+.copyright a:hover {
+    text-decoration: underline;
+    color: #e6c200;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .footer-columns {
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer-columns {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .footer-title::after {
+        left: 0;
+        width: 40px;
+    }
+    
+    .payment-methods {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer {
+        padding: 2rem 0 0;
+    }
+    
+    .footer-brand {
+        font-size: 1.8rem;
+    }
+    
+    .social-links {
+        justify-content: flex-start;
+    }
+    
+    .payment-methods i {
+        font-size: 1.5rem;
+    }
+}
+
+/* Footer Styles */
+.footer {
+    background-color: #1e3a2f; /* Vert foncé */
+    color: #ffffff;
+    padding: 3rem 0 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Structure en 4 colonnes */
+.footer-columns {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+/* Colonne 1 - Brand et réseaux sociaux */
+.brand-col {
+    text-align: left;
+}
+
+.footer-brand {
+    font-size: 2.2rem;
+    font-weight: 300;
+    margin-bottom: 1rem;
+    color: #ffffff;
+    letter-spacing: 1px;
+}
+
+.footer-description {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #d0d0d0;
+    margin-bottom: 1.5rem;
+}
+
+/* Réseaux sociaux */
+.social-links {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: #ffffff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+}
+
+.social-link:hover {
+    background-color: #d4af37;
+    color: #1e3a2f;
+    transform: translateY(-3px);
+}
+
+/* Titres des colonnes */
+.footer-title {
+    color: #d4af37; /* Or */
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+.footer-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background-color: #d4af37;
+}
+
+/* Listes */
+.footer-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-list li {
+    margin-bottom: 0.8rem;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+}
+
+.footer-list li:hover {
+    color: #d4af37;
+    cursor: default;
+}
+
+/* Style pour la liste avec icônes dorées */
+.footer-list.with-icons li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.footer-list.with-icons .icon {
+    color: #d4af37; /* Icônes dorées */
+    width: 30px;
+    font-size: 1.2rem;
+    margin-right: 10px;
+    transition: transform 0.3s ease;
+}
+
+.footer-list.with-icons li:hover .icon {
+    transform: scale(1.1);
+}
+
+/* Footer bottom avec paiement et copyright */
+.footer-bottom {
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    padding: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.payment-methods {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.payment-methods i {
+    font-size: 2rem;
+    color: #a0a0a0;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.payment-methods i:hover {
+    color: #d4af37;
+    transform: translateY(-2px);
+}
+
+.copyright {
+    color: #a0a0a0;
+    font-size: 0.9rem;
+    margin: 0;
+    text-align: center;
+}
+
+.copyright a {
+    color: #d4af37;
+    text-decoration: none;
+    margin: 0 3px;
+    transition: color 0.3s ease;
+}
+
+.copyright a:hover {
+    text-decoration: underline;
+    color: #e6c200;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .footer-columns {
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 2rem;
+    }
+    
+    .brand-col {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer-columns {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .footer-title::after {
+        left: 0;
+        width: 40px;
+    }
+    
+    .footer-col {
+        text-align: left;
+    }
+    
+    .payment-methods {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .payment-methods i {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer {
+        padding: 2rem 0 0;
+    }
+    
+    .footer-brand {
+        font-size: 1.8rem;
+    }
+    
+    .social-links {
+        justify-content: flex-start;
+    }
+    
+    .payment-methods i {
+        font-size: 1.5rem;
+    }
+}
