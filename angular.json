@@ -59,6 +59,9 @@
             "assets": [{"glob": "**/*", "input": "public"}],
             "styles": ["src/styles.css"]
           }
+        },
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy"
         }
       }
     }
