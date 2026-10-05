@@ -11,5 +11,5 @@ import { AcceuilComponent } from './acceuil/acceuil';
   `
 })
 export class App {
-  title = 'château des oliviers';
+  title = 'Byomasagrotourisme';
 }
